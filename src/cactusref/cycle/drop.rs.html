@@ -246,6 +246,7 @@
 <span id="246">246</span>
 <span id="247">247</span>
 <span id="248">248</span>
+<span id="249">249</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">ptr</span>;
 <span class="kw">use</span> <span class="ident">hashbrown</span>::<span class="ident">HashMap</span>;
@@ -414,29 +415,30 @@
         <span class="string">&quot;cactusref detected orphaned cycle with {} objects&quot;</span>,
         <span class="ident">cycle</span>.<span class="ident">len</span>()
     );
-    <span class="comment">// Remove reverse links so `this` is not included in cycle detection for</span>
-    <span class="comment">// objects that had adopted `this`. This prevents a use-after-free in</span>
-    <span class="comment">// `DetectCycles::orphaned_cycle`.</span>
-    <span class="comment">//</span>
-    <span class="comment">// Because the entire cycle is unreachable, the only forward and backward</span>
-    <span class="comment">// links are to objects in the cycle that we are about to deallocate. This</span>
-    <span class="comment">// allows us to bust the cycle detection by clearing all links.</span>
-    <span class="kw">for</span> <span class="ident">ptr</span> <span class="kw">in</span> <span class="ident">cycle</span>.<span class="ident">keys</span>() {
-        <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">inner</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">item</span>.<span class="ident">links</span>.<span class="ident">borrow_mut</span>();
-        <span class="ident">links</span>.<span class="ident">clear</span>();
-    }
-    <span class="kw">for</span> (<span class="ident">ptr</span>, <span class="ident">refcount</span>) <span class="kw">in</span> <span class="ident">cycle</span>.<span class="ident">clone</span>() {
+    <span class="kw">for</span> (<span class="ident">ptr</span>, <span class="ident">refcount</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">cycle</span> {
         <span class="macro">trace</span><span class="macro">!</span>(
             <span class="string">&quot;cactusref dropping member of orphaned cycle with refcount {}&quot;</span>,
             <span class="ident">refcount</span>
         );
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">into_raw_non_null</span>();
-        <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">as_mut</span>();
+
+        <span class="comment">// Remove reverse links so `this` is not included in cycle detection for</span>
+        <span class="comment">// objects that had adopted `this`. This prevents a use-after-free in</span>
+        <span class="comment">// `DetectCycles::orphaned_cycle`.</span>
+        <span class="comment">//</span>
+        <span class="comment">// Because the entire cycle is unreachable, the only forward and</span>
+        <span class="comment">// backward links are to objects in the cycle that we are about to</span>
+        <span class="comment">// deallocate. This allows us to bust the cycle detection by clearing</span>
+        <span class="comment">// all links.</span>
+        <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">inner</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">item</span>.<span class="ident">links</span>.<span class="ident">borrow_mut</span>();
+        <span class="ident">links</span>.<span class="ident">clear</span>();
+
         <span class="comment">// To be in a cycle, at least one `value` field in an `RcBox` in the</span>
         <span class="comment">// cycle holds a strong reference to `this`. Mark all nodes in the cycle</span>
         <span class="comment">// as dead so when we deallocate them via the `value` pointer we don&#39;t</span>
         <span class="comment">// get a double-free.</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">into_raw_non_null</span>();
+        <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">ptr</span>.<span class="ident">as_mut</span>();
         <span class="ident">item</span>.<span class="ident">kill</span>();
     }
     <span class="kw">for</span> (<span class="ident">ptr</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="ident">cycle</span> {
