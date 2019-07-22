@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+yarn install
 PATH="$(yarn bin):$PATH"
 export PATH
 cd "$(pkg-dir)"
