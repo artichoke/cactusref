@@ -28,9 +28,6 @@ jobs:
             RUST_BACKTRACE: 1
             CACTUS_LOG: trace
       - run:
-          name: Benchmark Workspace
-          command: cargo bench || true
-      - run:
           name: Format Rust Sources
           command: |
             rustfmt --version
