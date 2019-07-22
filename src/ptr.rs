@@ -1,8 +1,8 @@
 use core::mem;
-use core::ptr::{self, NonNull, Unique};
+use core::ptr::{self, NonNull};
 use std::alloc::{dealloc, Layout};
 use std::cell::{Cell, RefCell};
-use std::intrinsics::abort;
+use std::process::abort;
 
 use crate::link::Links;
 use crate::Rc;
@@ -22,9 +22,7 @@ pub trait RcBoxPtr<T: ?Sized> {
         // nevertheless, we insert an abort here to hint LLVM at
         // an otherwise missed optimization.
         if self.strong() == 0 || self.strong() == usize::max_value() {
-            unsafe {
-                abort();
-            }
+            abort();
         }
         self.inner().strong.set(self.strong() + 1);
     }
@@ -46,9 +44,7 @@ pub trait RcBoxPtr<T: ?Sized> {
         // nevertheless, we insert an abort here to hint LLVM at
         // an otherwise missed optimization.
         if self.weak() == 0 || self.weak() == usize::max_value() {
-            unsafe {
-                abort();
-            }
+            abort();
         }
         self.inner().weak.set(self.weak() + 1);
     }
@@ -96,7 +92,7 @@ pub fn is_dangling<T: ?Sized>(ptr: NonNull<T>) -> bool {
 // duplicated from a crate-private function in std
 // <https://github.com/rust-lang/rust/blob/baab1914/src/liballoc/alloc.rs#L212-L223>
 #[inline]
-pub unsafe fn box_free<T: ?Sized>(ptr: Unique<T>) {
+pub unsafe fn box_free<T: ?Sized>(ptr: NonNull<T>) {
     let ptr = ptr.as_ptr();
     let size = mem::size_of_val(&*ptr);
     let align = mem::align_of_val(&*ptr);
