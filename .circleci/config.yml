@@ -91,10 +91,18 @@ jobs:
             - "12:9a:f6:2f:21:ef:5c:cd:64:08:99:bc:4d:fa:7f:40"
       - attach_workspace:
           at: target
+      - restore_cache:
+          key: docs-yarn-v1-{{ checksum "yarn.lock" }}
       - run:
-          name: Install and configure dependencies
+          name: Yarn Install
+          command: yarn install
+      - save_cache:
+          key: docs-yarn-v1-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+      - run:
+          name: Configure git
           command: |
-            npm install -g --silent gh-pages@2.0.1
             git config user.email "ci-build@hyperbo.la"
             git config user.name "ci-build"
       - run:
