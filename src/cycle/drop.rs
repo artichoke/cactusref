@@ -165,29 +165,30 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         "cactusref detected orphaned cycle with {} objects",
         cycle.len()
     );
-    // Remove reverse links so `this` is not included in cycle detection for
-    // objects that had adopted `this`. This prevents a use-after-free in
-    // `DetectCycles::orphaned_cycle`.
-    //
-    // Because the entire cycle is unreachable, the only forward and backward
-    // links are to objects in the cycle that we are about to deallocate. This
-    // allows us to bust the cycle detection by clearing all links.
-    for ptr in cycle.keys() {
-        let item = ptr.inner();
-        let mut links = item.links.borrow_mut();
-        links.clear();
-    }
-    for (ptr, refcount) in cycle.clone() {
+    for (ptr, refcount) in &cycle {
         trace!(
             "cactusref dropping member of orphaned cycle with refcount {}",
             refcount
         );
-        let mut ptr = ptr.into_raw_non_null();
-        let item = ptr.as_mut();
+
+        // Remove reverse links so `this` is not included in cycle detection for
+        // objects that had adopted `this`. This prevents a use-after-free in
+        // `DetectCycles::orphaned_cycle`.
+        //
+        // Because the entire cycle is unreachable, the only forward and
+        // backward links are to objects in the cycle that we are about to
+        // deallocate. This allows us to bust the cycle detection by clearing
+        // all links.
+        let item = ptr.inner();
+        let mut links = item.links.borrow_mut();
+        links.clear();
+
         // To be in a cycle, at least one `value` field in an `RcBox` in the
         // cycle holds a strong reference to `this`. Mark all nodes in the cycle
         // as dead so when we deallocate them via the `value` pointer we don't
         // get a double-free.
+        let mut ptr = ptr.into_raw_non_null();
+        let item = ptr.as_mut();
         item.kill();
     }
     for (ptr, _) in cycle {
