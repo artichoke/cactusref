@@ -48,7 +48,7 @@ jobs:
           root: target
           paths:
             - doc
-  shell:
+  shell-format:
     docker:
       - image: peterdavehello/shfmt:latest
     steps:
@@ -113,7 +113,7 @@ workflows:
   build:
     jobs:
       - rust
-      - shell
+      - shell-format
       - shellcheck/check
       - text
       - docs-deploy:
