@@ -1260,7 +1260,7 @@
 
     <span class="kw">fn</span> <span class="ident">from_box</span>(<span class="ident">v</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="self">Self</span> {
         <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">box_unique</span> <span class="op">=</span> <span class="ident">Box</span>::<span class="ident">into_unique</span>(<span class="ident">v</span>);
+            <span class="kw">let</span> <span class="ident">box_unique</span> <span class="op">=</span> <span class="ident">Box</span>::<span class="ident">into_raw_non_null</span>(<span class="ident">v</span>);
             <span class="kw">let</span> <span class="ident">box_ptr</span> <span class="op">=</span> <span class="ident">box_unique</span>.<span class="ident">as_ptr</span>();
 
             <span class="kw">let</span> <span class="ident">value_size</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of_val</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">box_ptr</span>);
