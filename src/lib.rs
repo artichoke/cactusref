@@ -2,10 +2,8 @@
     allocator_api,
     alloc_layout_extra,
     box_into_raw_non_null,
-    core_intrinsics,
     dropck_eyepatch,
     optin_builtin_traits,
-    ptr_internals,
     specialization
 )]
 #![deny(warnings, intra_doc_link_resolution_failure, missing_docs)]

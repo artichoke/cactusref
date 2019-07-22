@@ -407,7 +407,7 @@ impl<T: ?Sized> Rc<T> {
 
     fn from_box(v: Box<T>) -> Self {
         unsafe {
-            let box_unique = Box::into_unique(v);
+            let box_unique = Box::into_raw_non_null(v);
             let box_ptr = box_unique.as_ptr();
 
             let value_size = mem::size_of_val(&*box_ptr);
