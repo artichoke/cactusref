@@ -14,9 +14,7 @@ struct Node {
 }
 
 fn circular_graph(count: usize) -> Rc<RefCell<Node>> {
-    let first = Rc::new(RefCell::new(Node {
-        links: vec![],
-    }));
+    let first = Rc::new(RefCell::new(Node { links: vec![] }));
     let mut last = Rc::clone(&first);
     for _ in 1..count {
         let obj = Rc::new(RefCell::new(Node {
@@ -33,9 +31,7 @@ fn circular_graph(count: usize) -> Rc<RefCell<Node>> {
 fn fully_connected_graph(count: usize) -> Rc<RefCell<Node>> {
     let mut nodes = vec![];
     for _ in 0..count {
-        nodes.push(Rc::new(RefCell::new(Node {
-            links: vec![],
-        })));
+        nodes.push(Rc::new(RefCell::new(Node { links: vec![] })));
     }
     for left in &nodes {
         for right in &nodes {
