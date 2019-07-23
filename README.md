@@ -4,18 +4,17 @@ Single-threaded, cycle-aware, reference-counting pointers. 'Rc' stands for
 'Reference Counted'.
 
 The type
-[`Rc<T>`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html)
+[`Rc<T>`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
 provides shared ownership of a value of type `T`, allocated in the heap.
 Invoking
-[`clone`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html#impl-Clone)
-on [`Rc`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html)
+[`clone`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html#impl-Clone)
+on [`Rc`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
 produces a new pointer to the same value in the heap. When the last externally
-reachable
-[`Rc`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html) pointer
-to a given value is destroyed, the pointed-to value is also destroyed.
+reachable [`Rc`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
+pointer to a given value is destroyed, the pointed-to value is also destroyed.
 
 `Rc` can **detect and deallocate cycles** of `Rc`s through the use of
-[`Adoptable`](https://lopopolo.github.io/ferrocarril/cactusref/trait.Adoptable.html).
+[`Adoptable`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html).
 Cycle detection is a zero-cost abstraction.
 
 🌌 `CactusRef` depends on _several_ unstable Rust features and can only be built
@@ -40,15 +39,15 @@ If you do not depend on these APIs, `cactusref` is a drop-in replacement for
 [`std::rc`](https://doc.rust-lang.org/std/rc/index.html).
 
 Like [`std::rc`](https://doc.rust-lang.org/std/rc/index.html),
-[`Rc`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html) and
-[`Weak`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Weak.html) are
+[`Rc`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html) and
+[`Weak`](https://artichoke.github.io/cactusref/cactusref/struct.Weak.html) are
 `!`[`Send`](https://doc.rust-lang.org/nightly/core/marker/trait.Send.html) and
 `!`[`Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html).
 
 ## Cycle Detection
 
 `Rc` implements
-[`Adoptable`](https://lopopolo.github.io/ferrocarril/cactusref/trait.Adoptable.html)
+[`Adoptable`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html)
 to log bookkeeping entries for strong ownership links to other `Rc`s that may
 form a cycle. The ownership links tracked by these bookkeeping entries form an
 object graph of reachable `Rc`s. On `drop`, `Rc` uses these entries to conduct a
