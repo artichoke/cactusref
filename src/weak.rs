@@ -24,6 +24,22 @@ use crate::Rc;
 /// pointers from children back to their parents.
 ///
 /// The typical way to obtain a `Weak` pointer is to call [`Rc::downgrade`].
+///
+/// Like [`std::rc::Weak`], `Weak` is `!`[`Send`] and `!`[`Sync`].
+///
+/// ```rust,compile_fail
+/// # use cactusref::Rc;
+/// fn requires_send<T: Send>(s: T) {}
+/// let item = Rc::new(5);
+/// requires_send(Rc::downgrade(&item));
+/// ```
+///
+/// ```rust,compile_fail
+/// # use cactusref::Rc;
+/// fn requires_sync<T: Sync>(s: T) {}
+/// let item = Rc::new(5);
+/// requires_sync(Rc::downgrade(&item));
+/// ```
 pub struct Weak<T: ?Sized> {
     // This is a `NonNull` to allow optimizing the size of this type in enums,
     // but it is not necessarily a valid pointer.
@@ -32,9 +48,6 @@ pub struct Weak<T: ?Sized> {
     // will ever have because RcBox has alignment at least 2.
     pub(crate) ptr: NonNull<RcBox<T>>,
 }
-
-impl<T: ?Sized> !Send for Weak<T> {}
-impl<T: ?Sized> !Sync for Weak<T> {}
 
 impl<T> Weak<T> {
     /// Constructs a new `Weak<T>`, without allocating any memory.

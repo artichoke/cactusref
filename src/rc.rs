@@ -29,13 +29,24 @@ use crate::Weak;
 /// that you have to call them as e.g., [`Rc::get_mut(&mut value)`](Rc::get_mut)
 /// instead of `value.get_mut()`. This avoids conflicts with methods of the
 /// inner type `T`.
+///
+/// Like [`std::rc::Rc`], `Rc` is `!`[`Send`] and `!`[`Sync`].
+///
+/// ```rust,compile_fail
+/// # use cactusref::Rc;
+/// fn requires_send<T: Send>(s: T) {}
+/// requires_send(Rc::new(5));
+/// ```
+///
+/// ```rust,compile_fail
+/// # use cactusref::Rc;
+/// fn requires_sync<T: Sync>(s: T) {}
+/// requires_sync(Rc::new(5));
+/// ```
 pub struct Rc<T: ?Sized> {
     pub(crate) ptr: NonNull<RcBox<T>>,
     pub(crate) phantom: PhantomData<T>,
 }
-
-impl<T: ?Sized> !Send for Rc<T> {}
-impl<T: ?Sized> !Sync for Rc<T> {}
 
 impl<T> Rc<T> {
     /// Constructs a new `Rc<T>`.

@@ -3,7 +3,6 @@
     alloc_layout_extra,
     box_into_raw_non_null,
     dropck_eyepatch,
-    optin_builtin_traits,
     specialization
 )]
 #![deny(warnings, intra_doc_link_resolution_failure, missing_docs)]
@@ -41,6 +40,8 @@
 //!
 //! If you do not depend on these APIs, `cactusref` is a drop-in replacement for
 //! [`std::rc`].
+//!
+//! Like [`std::rc`], [`Rc`] and [`Weak`] are `!`[`Send`] and `!`[`Sync`].
 //!
 //! ## Cycle Detection
 //!
