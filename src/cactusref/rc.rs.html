@@ -850,6 +850,17 @@
 <span id="850">850</span>
 <span id="851">851</span>
 <span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">borrow</span>;
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">cell</span>::{<span class="ident">Cell</span>, <span class="ident">RefCell</span>};
@@ -882,13 +893,24 @@
 <span class="doccomment">/// that you have to call them as e.g., [`Rc::get_mut(&amp;mut value)`](Rc::get_mut)</span>
 <span class="doccomment">/// instead of `value.get_mut()`. This avoids conflicts with methods of the</span>
 <span class="doccomment">/// inner type `T`.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Like [`std::rc::Rc`], `Rc` is `!`[`Send`] and `!`[`Sync`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```rust,compile_fail</span>
+<span class="doccomment">/// # use cactusref::Rc;</span>
+<span class="doccomment">/// fn requires_send&lt;T: Send&gt;(s: T) {}</span>
+<span class="doccomment">/// requires_send(Rc::new(5));</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```rust,compile_fail</span>
+<span class="doccomment">/// # use cactusref::Rc;</span>
+<span class="doccomment">/// fn requires_sync&lt;T: Sync&gt;(s: T) {}</span>
+<span class="doccomment">/// requires_sync(Rc::new(5));</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">RcBox</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;&gt;</span>,
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">phantom</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="op">!</span><span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="op">!</span><span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {}
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Constructs a new `Rc&lt;T&gt;`.</span>
