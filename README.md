@@ -39,6 +39,12 @@ implements most of the API from `std`.
 If you do not depend on these APIs, `cactusref` is a drop-in replacement for
 [`std::rc`](https://doc.rust-lang.org/std/rc/index.html).
 
+Like [`std::rc`](https://doc.rust-lang.org/std/rc/index.html),
+[`Rc`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html) and
+[`Weak`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Weak.html) are
+`!`[`Send`](https://doc.rust-lang.org/nightly/core/marker/trait.Send.html) and
+`!`[`Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html).
+
 ## Cycle Detection
 
 `Rc` implements
