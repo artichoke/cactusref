@@ -3,6 +3,9 @@
 Single-threaded, cycle-aware, reference-counting pointers. 'Rc' stands for
 'Reference Counted'.
 
+[![CircleCI](https://circleci.com/gh/artichoke/cactusref.svg?style=svg)](https://circleci.com/gh/artichoke/cactusref)
+| [Documentation](https://artichoke.github.io/cactusref/cactusref/)
+
 The type
 [`Rc<T>`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
 provides shared ownership of a value of type `T`, allocated in the heap.
