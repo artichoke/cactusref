@@ -97,19 +97,27 @@ impl<T> List<T> {
         let tail = head.borrow_mut().prev.take();
         let next = head.borrow_mut().next.take();
         if let Some(ref tail) = tail {
-            Rc::unadopt(&head, &tail);
-            Rc::unadopt(&tail, &head);
+            unsafe {
+                Rc::unadopt(&head, &tail);
+                Rc::unadopt(&tail, &head);
+            }
             tail.borrow_mut().next = next.as_ref().map(Rc::clone);
             if let Some(ref next) = next {
-                Rc::adopt(tail, next);
+                unsafe {
+                    Rc::adopt(tail, next);
+                }
             }
         }
         if let Some(ref next) = next {
-            Rc::unadopt(&head, &next);
-            Rc::unadopt(&next, &head);
+            unsafe {
+                Rc::unadopt(&head, &next);
+                Rc::unadopt(&next, &head);
+            }
             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
             if let Some(ref tail) = tail {
-                Rc::adopt(next, tail);
+                unsafe {
+                    Rc::adopt(next, tail);
+                }
             }
         }
         self.head = next;
@@ -134,15 +142,19 @@ impl<T> From<Vec<T>> for List<T> {
             let next = &nodes[i + 1];
             curr.borrow_mut().next = Some(Rc::clone(next));
             next.borrow_mut().prev = Some(Rc::clone(curr));
-            Rc::adopt(curr, next);
-            Rc::adopt(next, curr);
+            unsafe {
+                Rc::adopt(curr, next);
+                Rc::adopt(next, curr);
+            }
         }
         let tail = &nodes[nodes.len() - 1];
         let head = &nodes[0];
         tail.borrow_mut().next = Some(Rc::clone(head));
         head.borrow_mut().prev = Some(Rc::clone(tail));
-        Rc::adopt(tail, head);
-        Rc::adopt(head, tail);
+        unsafe {
+            Rc::adopt(tail, head);
+            Rc::adopt(head, tail);
+        }
 
         let head = Rc::clone(head);
         Self { head: Some(head) }

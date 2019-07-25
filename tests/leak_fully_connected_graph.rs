@@ -23,7 +23,9 @@ fn fully_connected_graph(count: usize) -> Vec<Rc<RefCell<Node<String>>>> {
     for left in &nodes {
         for right in &nodes {
             let link = Rc::clone(right);
-            Rc::adopt(left, &link);
+            unsafe {
+                Rc::adopt(left, &link);
+            }
             left.borrow_mut().links.push(link);
         }
     }
