@@ -2,7 +2,7 @@ use core::ptr;
 use hashbrown::HashMap;
 use std::alloc::{Alloc, Global, Layout};
 
-use crate::cycle::DetectCycles;
+use crate::cyclic::Cyclic;
 use crate::link::{Kind, Link};
 use crate::ptr::RcBoxPtr;
 use crate::Rc;
