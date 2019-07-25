@@ -8,9 +8,6 @@ use std::iter;
 
 mod leak;
 
-const ITERATIONS: usize = 50;
-const LEAK_TOLERANCE: i64 = 1024 * 1024 * 25;
-
 struct Node<T> {
     pub prev: Option<Rc<RefCell<Self>>>,
     pub next: Option<Rc<RefCell<Self>>>,
@@ -80,24 +77,21 @@ impl<T> From<Vec<T>> for List<T> {
 }
 
 #[test]
-fn cactusref_doubly_linked_list_no_leak() {
+fn leak_doubly_linked_list() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
-    // 500MB of `String`s will be allocated by the leak detector
-    leak::Detector::new("CactusRef doubly linked list", ITERATIONS, LEAK_TOLERANCE).check_leaks(
-        |_| {
-            let list = iter::repeat(())
-                .map(|_| "a".repeat(1024 * 1024))
-                .take(10)
-                .collect::<Vec<_>>();
-            let mut list = List::from(list);
-            let head = list.pop().unwrap();
-            assert_eq!(Rc::strong_count(&head), 1);
-            assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
-            let weak = Rc::downgrade(&head);
-            drop(head);
-            assert!(weak.upgrade().is_none());
-            drop(list);
-        },
-    );
+    leak::Detector::new("doubly linked list", None, None).check_leaks(|_| {
+        let list = iter::repeat(())
+            .map(|_| "a".repeat(1024 * 1024))
+            .take(10)
+            .collect::<Vec<_>>();
+        let mut list = List::from(list);
+        let head = list.pop().unwrap();
+        assert_eq!(Rc::strong_count(&head), 1);
+        assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
+        let weak = Rc::downgrade(&head);
+        drop(head);
+        assert!(weak.upgrade().is_none());
+        drop(list);
+    });
 }

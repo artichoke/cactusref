@@ -164,7 +164,8 @@
 extern crate log;
 
 mod adoptable;
-mod cycle;
+mod cyclic;
+mod drop;
 mod link;
 mod ptr;
 mod rc;

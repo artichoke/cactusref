@@ -4,13 +4,11 @@ use crate::link::{Kind, Link};
 use crate::ptr::RcBoxPtr;
 use crate::Rc;
 
-mod drop;
-
-trait DetectCycles<T: ?Sized> {
+pub trait Cyclic<T: ?Sized> {
     fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>>;
 }
 
-impl<T: ?Sized> DetectCycles<T> for Rc<T> {
+impl<T: ?Sized> Cyclic<T> for Rc<T> {
     fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>> {
         let cycle = cycle_refs(Link::forward(this.ptr));
         if cycle.is_empty() {
