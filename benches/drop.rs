@@ -13,6 +13,18 @@ struct Node {
     links: Vec<Rc<RefCell<Self>>>,
 }
 
+fn chain_no_adoptions(count: usize) -> Rc<RefCell<Node>> {
+    let first = Rc::new(RefCell::new(Node { links: vec![] }));
+    let mut last = Rc::clone(&first);
+    for _ in 1..count {
+        let obj = Rc::new(RefCell::new(Node {
+            links: vec![Rc::clone(&last)],
+        }));
+        last = obj;
+    }
+    last
+}
+
 fn circular_graph(count: usize) -> Rc<RefCell<Node>> {
     let first = Rc::new(RefCell::new(Node { links: vec![] }));
     let mut last = Rc::clone(&first);
@@ -53,6 +65,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("drop single", |b| {
         b.iter_with_large_setup(|| Rc::new(()), drop)
     });
+    c.bench_function_over_inputs(
+        "drop a chain with no adoptions",
+        |b, &&size| b.iter_with_large_setup(|| chain_no_adoptions(black_box(size)), drop),
+        &[10, 20, 30, 40, 50, 100],
+    );
     c.bench_function_over_inputs(
         "drop a circular graph",
         |b, &&size| b.iter_with_large_setup(|| circular_graph(black_box(size)), drop),
