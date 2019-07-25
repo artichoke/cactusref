@@ -10,8 +10,9 @@ struct Array {
 }
 
 #[test]
-fn cactusref_weak() {
+fn weak() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
+
     let array = Rc::new(RefCell::new(Array::default()));
     for _ in 0..10 {
         let item = Rc::clone(&array);

@@ -1,30 +1,25 @@
 #![deny(clippy::all, clippy::pedantic)]
 #![deny(warnings, intra_doc_link_resolution_failure)]
 
-use cactusref::{Adoptable, CactusRef};
+use cactusref::{Adoptable, Rc};
 
 mod leak;
 
-const ITERATIONS: usize = 50;
-const LEAK_TOLERANCE: i64 = 1024 * 1024 * 25;
-
 #[test]
-fn cactusref_adopt_with_reachability_no_leak() {
+fn leak_adopt_with_dropped_rc() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
     let s = "a".repeat(1024 * 1024);
 
-    // 500MB of `String`s will be allocated by the leak detector
-    leak::Detector::new("CactusRef adopt cycle", ITERATIONS, LEAK_TOLERANCE).check_leaks(|_| {
-        // each iteration creates 10MB of `String`s
-        let first = CactusRef::new(s.clone());
-        let mut last = CactusRef::clone(&first);
+    leak::Detector::new("adopt with dropped Rc", None, None).check_leaks(|_| {
+        let first = Rc::new(s.clone());
+        let mut last = Rc::clone(&first);
         for _ in 1..10 {
-            let obj = CactusRef::new(s.clone());
-            CactusRef::adopt(&obj, &last);
+            let obj = Rc::new(s.clone());
+            Rc::adopt(&obj, &last);
             last = obj;
         }
-        CactusRef::adopt(&first, &last);
+        Rc::adopt(&first, &last);
         drop(first);
         drop(last);
     });

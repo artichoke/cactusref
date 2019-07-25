@@ -1,6 +1,9 @@
 use std::convert::AsRef;
 use std::mem;
 
+const DEFAULT_ITERATIONS: usize = 50;
+const DEFAULT_LEAK_TOLERANCE: i64 = 1024 * 1024 * 25;
+
 pub struct Detector {
     test: String,
     iterations: usize,
@@ -8,11 +11,11 @@ pub struct Detector {
 }
 
 impl Detector {
-    pub fn new<T: AsRef<str>>(test: T, iterations: usize, tolerance: i64) -> Self {
+    pub fn new<T: AsRef<str>>(test: T, iterations: Option<usize>, tolerance: Option<i64>) -> Self {
         Self {
             test: test.as_ref().to_owned(),
-            iterations,
-            tolerance,
+            iterations: iterations.unwrap_or(DEFAULT_ITERATIONS),
+            tolerance: tolerance.unwrap_or(DEFAULT_LEAK_TOLERANCE),
         }
     }
 

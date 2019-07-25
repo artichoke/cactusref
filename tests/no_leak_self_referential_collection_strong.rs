@@ -1,41 +1,30 @@
 #![deny(clippy::all, clippy::pedantic)]
 #![deny(warnings, intra_doc_link_resolution_failure)]
 
+use cactusref::{Adoptable, Rc};
 use std::cell::RefCell;
-
-use cactusref::{Adoptable, CactusRef};
 
 mod leak;
 
-const ITERATIONS: usize = 50;
-const LEAK_TOLERANCE: i64 = 1024 * 1024 * 25;
-
 struct RArray {
-    inner: Vec<CactusRef<RefCell<Self>>>,
+    inner: Vec<Rc<RefCell<Self>>>,
     _alloc: String,
 }
 
 #[test]
-fn cactusref_self_referential_collection_no_leak() {
+fn leak_self_referential_collection_strong() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
     let s = "a".repeat(2 * 1024 * 1024);
 
-    // 100MB of empty buffers will be allocated by the leak detector
-    leak::Detector::new(
-        "CactusRef adopted self-referential with strong",
-        ITERATIONS,
-        LEAK_TOLERANCE,
-    )
-    .check_leaks(|_| {
-        // each iteration creates 2MB of empty buffers
-        let vec = CactusRef::new(RefCell::new(RArray {
+    leak::Detector::new("self-referential collection strong", None, None).check_leaks(|_| {
+        let vec = Rc::new(RefCell::new(RArray {
             inner: vec![],
             _alloc: s.clone(),
         }));
         for _ in 1..10 {
-            vec.borrow_mut().inner.push(CactusRef::clone(&vec));
-            CactusRef::adopt(&vec, &vec);
+            vec.borrow_mut().inner.push(Rc::clone(&vec));
+            Rc::adopt(&vec, &vec);
         }
         drop(vec);
     });
