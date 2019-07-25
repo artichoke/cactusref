@@ -247,6 +247,8 @@
 <span id="247">247</span>
 <span id="248">248</span>
 <span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">ptr</span>;
 <span class="kw">use</span> <span class="ident">hashbrown</span>::<span class="ident">HashMap</span>;
@@ -307,8 +309,10 @@
     <span class="doccomment">/// let foo  = Rc::new(Foo(10));</span>
     <span class="doccomment">/// let foo2 = Rc::new(Foo(20));</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Rc::adopt(&amp;foo, &amp;foo2);</span>
-    <span class="doccomment">/// Rc::adopt(&amp;foo2, &amp;foo);</span>
+    <span class="doccomment">/// unsafe {</span>
+    <span class="doccomment">///     Rc::adopt(&amp;foo, &amp;foo2);</span>
+    <span class="doccomment">///     Rc::adopt(&amp;foo2, &amp;foo);</span>
+    <span class="doccomment">/// }</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// drop(foo);    // Doesn&#39;t print anything</span>
     <span class="doccomment">/// drop(foo2);   // Prints &quot;dropped 10!&quot; and &quot;dropped 20!&quot;</span>

@@ -182,6 +182,18 @@
 <span id="182">182</span>
 <span id="183">183</span>
 <span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">feature</span>(
     <span class="ident">allocator_api</span>,
@@ -278,19 +290,27 @@
 <span class="doccomment">//!         let tail = head.borrow_mut().prev.take();</span>
 <span class="doccomment">//!         let next = head.borrow_mut().next.take();</span>
 <span class="doccomment">//!         if let Some(ref tail) = tail {</span>
-<span class="doccomment">//!             Rc::unadopt(&amp;head, &amp;tail);</span>
-<span class="doccomment">//!             Rc::unadopt(&amp;tail, &amp;head);</span>
+<span class="doccomment">//!             unsafe {</span>
+<span class="doccomment">//!                 Rc::unadopt(&amp;head, &amp;tail);</span>
+<span class="doccomment">//!                 Rc::unadopt(&amp;tail, &amp;head);</span>
+<span class="doccomment">//!             }</span>
 <span class="doccomment">//!             tail.borrow_mut().next = next.as_ref().map(Rc::clone);</span>
 <span class="doccomment">//!             if let Some(ref next) = next {</span>
-<span class="doccomment">//!                 Rc::adopt(tail, next);</span>
+<span class="doccomment">//!                 unsafe {</span>
+<span class="doccomment">//!                     Rc::adopt(tail, next);</span>
+<span class="doccomment">//!                 }</span>
 <span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
 <span class="doccomment">//!         if let Some(ref next) = next {</span>
-<span class="doccomment">//!             Rc::unadopt(&amp;head, &amp;next);</span>
-<span class="doccomment">//!             Rc::unadopt(&amp;next, &amp;head);</span>
+<span class="doccomment">//!             unsafe {</span>
+<span class="doccomment">//!                 Rc::unadopt(&amp;head, &amp;next);</span>
+<span class="doccomment">//!                 Rc::unadopt(&amp;next, &amp;head);</span>
+<span class="doccomment">//!             }</span>
 <span class="doccomment">//!             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);</span>
 <span class="doccomment">//!             if let Some(ref tail) = tail {</span>
-<span class="doccomment">//!                 Rc::adopt(next, tail);</span>
+<span class="doccomment">//!                 unsafe {</span>
+<span class="doccomment">//!                     Rc::adopt(next, tail);</span>
+<span class="doccomment">//!                 }</span>
 <span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
 <span class="doccomment">//!         self.head = next;</span>
@@ -315,15 +335,19 @@
 <span class="doccomment">//!             let next = &amp;nodes[i + 1];</span>
 <span class="doccomment">//!             curr.borrow_mut().next = Some(Rc::clone(next));</span>
 <span class="doccomment">//!             next.borrow_mut().prev = Some(Rc::clone(curr));</span>
-<span class="doccomment">//!             Rc::adopt(curr, next);</span>
-<span class="doccomment">//!             Rc::adopt(next, curr);</span>
+<span class="doccomment">//!             unsafe {</span>
+<span class="doccomment">//!                 Rc::adopt(curr, next);</span>
+<span class="doccomment">//!                 Rc::adopt(next, curr);</span>
+<span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
 <span class="doccomment">//!         let tail = &amp;nodes[nodes.len() - 1];</span>
 <span class="doccomment">//!         let head = &amp;nodes[0];</span>
 <span class="doccomment">//!         tail.borrow_mut().next = Some(Rc::clone(head));</span>
 <span class="doccomment">//!         head.borrow_mut().prev = Some(Rc::clone(tail));</span>
-<span class="doccomment">//!         Rc::adopt(tail, head);</span>
-<span class="doccomment">//!         Rc::adopt(head, tail);</span>
+<span class="doccomment">//!         unsafe {</span>
+<span class="doccomment">//!             Rc::adopt(tail, head);</span>
+<span class="doccomment">//!             Rc::adopt(head, tail);</span>
+<span class="doccomment">//!         }</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//!         let head = Rc::clone(head);</span>
 <span class="doccomment">//!         Self { head: Some(head) }</span>
