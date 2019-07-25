@@ -50,6 +50,9 @@ fn fully_connected_graph(count: usize) -> Rc<RefCell<Node>> {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
+    c.bench_function("drop single", |b| {
+        b.iter_with_large_setup(|| Rc::new(()), drop)
+    });
     c.bench_function_over_inputs(
         "drop a circular graph",
         |b, &&size| b.iter_with_large_setup(|| circular_graph(black_box(size)), drop),
