@@ -23,14 +23,16 @@ fn leak_adopt_self() {
             link: None,
         }));
         first.borrow_mut().link = Some(Rc::clone(&first));
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
+        unsafe {
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+            Rc::adopt(&first, &first);
+        }
         assert_eq!(first.borrow().inner, s);
         drop(first);
     });

@@ -16,10 +16,14 @@ fn leak_adopt_with_dropped_rc() {
         let mut last = Rc::clone(&first);
         for _ in 1..10 {
             let obj = Rc::new(s.clone());
-            Rc::adopt(&obj, &last);
+            unsafe {
+                Rc::adopt(&obj, &last);
+            }
             last = obj;
         }
-        Rc::adopt(&first, &last);
+        unsafe {
+            Rc::adopt(&first, &last);
+        }
         drop(first);
         drop(last);
     });

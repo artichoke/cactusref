@@ -57,8 +57,10 @@ unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
     /// let foo  = Rc::new(Foo(10));
     /// let foo2 = Rc::new(Foo(20));
     ///
-    /// Rc::adopt(&foo, &foo2);
-    /// Rc::adopt(&foo2, &foo);
+    /// unsafe {
+    ///     Rc::adopt(&foo, &foo2);
+    ///     Rc::adopt(&foo2, &foo);
+    /// }
     ///
     /// drop(foo);    // Doesn't print anything
     /// drop(foo2);   // Prints "dropped 10!" and "dropped 20!"

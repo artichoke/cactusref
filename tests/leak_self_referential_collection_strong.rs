@@ -24,7 +24,9 @@ fn leak_self_referential_collection_strong() {
         }));
         for _ in 1..10 {
             vec.borrow_mut().inner.push(Rc::clone(&vec));
-            Rc::adopt(&vec, &vec);
+            unsafe {
+                Rc::adopt(&vec, &vec);
+            }
         }
         drop(vec);
     });

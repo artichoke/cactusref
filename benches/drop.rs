@@ -20,11 +20,15 @@ fn circular_graph(count: usize) -> Rc<RefCell<Node>> {
         let obj = Rc::new(RefCell::new(Node {
             links: vec![Rc::clone(&last)],
         }));
-        Rc::adopt(&obj, &last);
+        unsafe {
+            Rc::adopt(&obj, &last);
+        }
         last = obj;
     }
-    Rc::adopt(&first, &last);
     first.borrow_mut().links.push(Rc::clone(&last));
+    unsafe {
+        Rc::adopt(&first, &last);
+    }
     first
 }
 
@@ -36,8 +40,10 @@ fn fully_connected_graph(count: usize) -> Rc<RefCell<Node>> {
     for left in &nodes {
         for right in &nodes {
             let link = Rc::clone(right);
-            Rc::adopt(left, &link);
             left.borrow_mut().links.push(link);
+            unsafe {
+                Rc::adopt(left, &right);
+            }
         }
     }
     nodes.remove(0)

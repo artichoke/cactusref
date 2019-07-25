@@ -8,31 +8,46 @@ use crate::Rc;
 /// implementors to detect cycles.
 ///
 /// **Warning**: this trait is unsafe because if it is implemented incorrectly,
-/// memory may leak or be double freed.
+/// memory may leak, double-free, or free too early and result in a dangling
+/// pointer.
 pub unsafe trait Adoptable {
     /// Perform bookkeeping to record that `this` has an owned reference to
     /// `other`. Adoption is a one-way link.
-    fn adopt(this: &Self, other: &Self);
+    ///
+    /// **Warning**: this function unsafe because if it is used incorrectly,
+    /// memory may leak, double-free, or free too early and result in a dangling
+    /// pointer.
+    unsafe fn adopt(this: &Self, other: &Self);
 
     /// Perform bookkeeping to record that `this` no longer has an owned
     /// reference to `other`. Adoption is a one-way link.
-    fn unadopt(this: &Self, other: &Self);
+    ///
+    /// **Warning**: this function unsafe because if it is used incorrectly,
+    /// memory may leak, double-free, or free too early and result in a dangling
+    /// pointer.
+    unsafe fn unadopt(this: &Self, other: &Self);
 }
 
 /// Implementation of [`Adoptable`] for [`Rc`] which enables `Rc`s to form a
 /// cycle of strong references that are reaped by `Rc`'s [`Drop`]
 /// implementation.
 unsafe impl<T: ?Sized> Adoptable for Rc<T> {
-    /// Perform bookkeeping to record that `this` has an owned reference to
+    /// Perform bookkeeping to record that `this` holds an owned reference to
     /// `other`.
     ///
-    /// `this` stores a reference to `other`'s `RcBox` so [`Rc`] can detect
-    /// cycles with reachability tests in [`Drop`].
+    /// `Drop` expects that `this` currently holds a refernce to `other` by the
+    /// time `adopt` is called, although it may be safe to call adopt before the
+    /// reference is held.
     ///
-    /// `other` has it's strong count increased by one without having a
-    /// droppable `Rc` created. During cycle detection, this increased strong
-    /// count is used to determine whether the cycle is reachable by any objects
-    /// outside of the cycle.
+    /// # Safety
+    ///
+    /// Modifying the object graph by removing links after calling `adopt`
+    /// requires updating the bookkeeping with [`unadopt`](Adoptable::unadopt).
+    /// Failure to properly remove links from the object graph may cause `Drop`
+    /// to detect a cycle is not externally reachable, reulting in prematurely
+    /// deallocating the entire cycle and turning all reachable [`Rc`]s into
+    /// dangling pointers. `CactusRef` makes a best-effort attempt to abort the
+    /// program if an access to a dead `Rc` occurs.
     ///
     /// # Examples
     ///
@@ -50,8 +65,10 @@ unsafe impl<T: ?Sized> Adoptable for Rc<T> {
     /// let array = Rc::new(RefCell::new(Array::default()));
     /// for _ in 0..10 {
     ///     let item = Rc::clone(&array);
-    ///     Rc::adopt(&array, &item);
     ///     array.borrow_mut().buffer.push(item);
+    ///     unsafe {
+    ///         Rc::adopt(&array, &array);
+    ///     }
     /// }
     /// let weak = Rc::downgrade(&array);
     /// // 1 for the array binding, 10 for the `Rc`s in buffer
@@ -60,7 +77,7 @@ unsafe impl<T: ?Sized> Adoptable for Rc<T> {
     /// assert!(weak.upgrade().is_none());
     /// assert_eq!(weak.weak_count(), Some(1));
     /// ```
-    fn adopt(this: &Self, other: &Self) {
+    unsafe fn adopt(this: &Self, other: &Self) {
         // Adoption signals the intent to take an owned reference to `other`, so
         // always increment the strong count of other. This allows `this` to be
         // self-referential and allows `this` to own multiple references to
@@ -81,14 +98,22 @@ unsafe impl<T: ?Sized> Adoptable for Rc<T> {
         links.insert(Link::backward(this.ptr));
     }
 
-    /// Perform bookkeeping to record that `this` no longer has an owned
+    /// Perform bookkeeping to record that `this` no longer holds an owned
     /// reference to `other`.
     ///
-    /// `this` stores a reference to `other`'s `RcBox` so [`Rc`] can detect
-    /// cycles with reachability tests in [`Drop`].
+    /// `Drop` expects that `this` currently does not hold a refernce to `other`
+    /// by the time `unadopt` is called, although it may be safe to call adopt
+    /// before the reference is held.
     ///
-    /// `other` has it's strong count decreased by one. `unadopt` removes
-    /// forward and reverse link tracking.
+    /// # Safety
+    ///
+    /// Modifying the object graph by removing links after calling
+    /// [`adopt`](Adoptable::adopt) requires updating the bookkeeping with
+    /// `unadopt`.  Failure to properly remove links from the object graph may
+    /// cause `Drop` to detect a cycle is not externally reachable, reulting in
+    /// prematurely deallocating the entire cycle and turning all reachable
+    /// [`Rc`]s into dangling pointers. `CactusRef` makes a best-effort attempt
+    /// to abort the program if an access to a dead `Rc` occurs.
     ///
     /// # Examples
     ///
@@ -106,8 +131,10 @@ unsafe impl<T: ?Sized> Adoptable for Rc<T> {
     /// let array = Rc::new(RefCell::new(Array::default()));
     /// for _ in 0..10 {
     ///     let item = Rc::clone(&array);
-    ///     Rc::adopt(&array, &item);
     ///     array.borrow_mut().buffer.push(item);
+    ///     unsafe {
+    ///         Rc::adopt(&array, &array);
+    ///     }
     /// }
     /// let weak = Rc::downgrade(&array);
     /// // 1 for the array binding, 10 for the `Rc`s in buffer
@@ -122,7 +149,7 @@ unsafe impl<T: ?Sized> Adoptable for Rc<T> {
     /// assert!(weak.upgrade().is_none());
     /// assert_eq!(weak.weak_count(), Some(1));
     /// ```
-    fn unadopt(this: &Self, other: &Self) {
+    unsafe fn unadopt(this: &Self, other: &Self) {
         // Remove a forward reference to `other` in `this`. This bookkeeping
         // logs a strong reference and is used for discovering cycles.
         let mut links = this.inner().links.borrow_mut();

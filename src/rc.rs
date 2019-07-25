@@ -11,6 +11,7 @@ use core::ptr::{self, NonNull};
 use core::slice;
 
 use std::alloc::{handle_alloc_error, Alloc, Global, Layout};
+use std::process::abort;
 
 use crate::link::Links;
 use crate::ptr::{box_free, data_offset, is_dangling, set_data_ptr, RcBox, RcBoxPtr};
@@ -137,6 +138,15 @@ impl<T: ?Sized> Rc<T> {
     /// ```
     #[allow(clippy::wrong_self_convention)]
     pub fn into_raw(this: Self) -> *const T {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if this.inner().is_dead() {
+            abort();
+        }
         let ptr: *const T = &*this;
         mem::forget(this);
         ptr
@@ -215,6 +225,15 @@ impl<T: ?Sized> Rc<T> {
     /// let weak_five = Rc::downgrade(&five);
     /// ```
     pub fn downgrade(this: &Self) -> Weak<T> {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if this.inner().is_dead() {
+            abort();
+        }
         this.inc_weak();
         // Make sure we do not create a dangling Weak
         debug_assert!(!is_dangling(this.ptr));
@@ -235,6 +254,15 @@ impl<T: ?Sized> Rc<T> {
     /// ```
     #[inline]
     pub fn weak_count(this: &Self) -> usize {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if this.inner().is_dead() {
+            abort();
+        }
         this.weak() - 1
     }
 
@@ -252,13 +280,20 @@ impl<T: ?Sized> Rc<T> {
     /// ```
     #[inline]
     pub fn strong_count(this: &Self) -> usize {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if this.inner().is_dead() {
+            abort();
+        }
         this.strong()
     }
 
     /// Returns `true` if there are no other `Rc` or [`Weak`] pointers to this
     /// inner value.
-    ///
-    /// [weak]: struct.Weak.html
     #[inline]
     pub(crate) fn is_unique(this: &Self) -> bool {
         Self::weak_count(this) == 0 && Self::strong_count(this) == 1
@@ -311,6 +346,15 @@ impl<T: ?Sized> Rc<T> {
     /// ```
     #[inline]
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if this.inner().is_dead() || other.inner().is_dead() {
+            abort();
+        }
         this.ptr.as_ptr() == other.ptr.as_ptr()
     }
 }
@@ -532,6 +576,15 @@ impl<T: ?Sized> Deref for Rc<T> {
 
     #[inline]
     fn deref(&self) -> &T {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if self.inner().is_dead() {
+            abort();
+        }
         &self.inner().value
     }
 }
@@ -553,6 +606,15 @@ impl<T: ?Sized> Clone for Rc<T> {
     /// ```
     #[inline]
     fn clone(&self) -> Self {
+        // Improper use of `Adoptable::unadopt` can result in `Drop` detecting
+        // an orphaned cycle when the cycle is still externally reachable. When
+        // this happens, all `RcBox`s and the value `T` they contain will be
+        // freed and this `Rc` will be a dangling pointer. If this happens,
+        // accessing the value wrapped by this `Rc` cannot be guaranteed to
+        // succeed. To ensure safety, abort the program.
+        if self.inner().is_dead() {
+            abort();
+        }
         self.inc_strong();
         Self {
             ptr: self.ptr,

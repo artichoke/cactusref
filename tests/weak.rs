@@ -16,7 +16,9 @@ fn weak() {
     let array = Rc::new(RefCell::new(Array::default()));
     for _ in 0..10 {
         let item = Rc::clone(&array);
-        Rc::adopt(&array, &item);
+        unsafe {
+            Rc::adopt(&array, &item);
+        }
         array.borrow_mut().buffer.push(item);
     }
     assert_eq!(Rc::strong_count(&array), 11);
