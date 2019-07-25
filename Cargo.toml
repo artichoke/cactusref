@@ -12,7 +12,7 @@ harness = false
 
 [dependencies]
 hashbrown = "0.5"
-log = "0.4.6"
+log = "0.4"
 
 [dev-dependencies]
 criterion = "0.2.11"
