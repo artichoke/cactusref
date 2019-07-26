@@ -2,7 +2,7 @@
   "name": "cactusref",
   "version": "0.1.0",
   "private": true,
-  "description": "Cycle-aware reference counting smart pointer",
+  "description": "Single-threaded, cycle-aware, reference-counting pointers",
   "keywords": [
     "gc",
     "garbage collection",
