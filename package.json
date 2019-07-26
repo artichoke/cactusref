@@ -1,6 +1,7 @@
 {
   "name": "cactusref",
   "version": "0.1.0",
+  "private": true,
   "description": "Cycle-aware reference counting smart pointer",
   "keywords": [
     "gc",
