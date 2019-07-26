@@ -178,7 +178,10 @@ drop(list);
 
 ## License
 
-CactusRef is licensed with the MIT License (c) Ryan Lopopolo.
+CactusRef is licensed with the [MIT License](/LICENSE) (c) Ryan Lopopolo.
 
-CactusRef is derived from `Rc` in the Rust standard library v1.38.0 which is
-dual licensed with the MIT License and Apache 2.0 License.
+CactusRef is derived from `Rc` in the Rust standard library @
+[`296e825`](https://github.com/rust-lang/rust/blob/296e825afab8665dfc5527aa8f72dfe5f5894224/src/liballoc/rc.rs)
+which is dual licensed with the
+[MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT) and
+[Apache 2.0 License](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE).
