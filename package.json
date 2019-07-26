@@ -1,14 +1,17 @@
 {
   "name": "cactusref",
   "version": "0.1.0",
-  "description": "Cycle-aware reference counting smart pointer",
+  "private": true,
+  "description": "Single-threaded, cycle-aware, reference-counting pointers",
   "keywords": [
     "gc",
-    "garbage",
-    "collection",
-    "pointer"
+    "garbage collection",
+    "heap",
+    "memory management",
+    "pointer",
+    "rust"
   ],
-  "homepage": "https://github.com/artichoke/cactusref",
+  "homepage": "https://github.com/artichoke/cactusref#readme",
   "bugs": "https://github.com/artichoke/cactusref/issues",
   "license": "MIT",
   "author": {
@@ -40,6 +43,7 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.12.0",
     "gh-pages": "^2.0.1",
+    "package-json-validator": "^0.6.3",
     "pkg-dir-cli": "^2.1.0",
     "prettier": "^1.15.3",
     "prettier-eslint": "^8.8.2"
