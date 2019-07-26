@@ -1,5 +1,8 @@
+#![deny(clippy::all, clippy::pedantic)]
+#![deny(warnings, intra_doc_link_resolution_failure)]
+#![allow(clippy::empty_enum, clippy::eq_op)]
+
 use cactusref::{Rc, Weak};
-use std::any::Any;
 use std::cell::RefCell;
 use std::cmp::PartialEq;
 
@@ -22,7 +25,7 @@ fn float_nan_ne() {
 fn partial_eq() {
     struct TestPEq(RefCell<usize>);
     impl PartialEq for TestPEq {
-        fn eq(&self, other: &TestPEq) -> bool {
+        fn eq(&self, other: &Self) -> bool {
             *self.0.borrow_mut() += 1;
             *other.0.borrow_mut() += 1;
             true
@@ -39,7 +42,7 @@ fn eq() {
     #[derive(Eq)]
     struct TestEq(RefCell<usize>);
     impl PartialEq for TestEq {
-        fn eq(&self, other: &TestEq) -> bool {
+        fn eq(&self, other: &Self) -> bool {
             *self.0.borrow_mut() += 1;
             *other.0.borrow_mut() += 1;
             true
