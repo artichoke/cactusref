@@ -9,6 +9,11 @@ cd "$(pkg-dir)"
 
 set -x
 
+# Yarn orchestration
+
+## Lint package.json
+pjv
+
 # Rust sources
 
 ## Format with rustfmt
