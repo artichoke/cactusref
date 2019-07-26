@@ -4,9 +4,11 @@
   "description": "Cycle-aware reference counting smart pointer",
   "keywords": [
     "gc",
-    "garbage",
-    "collection",
-    "pointer"
+    "garbage collection",
+    "heap",
+    "memory management",
+    "pointer",
+    "rust"
   ],
   "homepage": "https://github.com/artichoke/cactusref",
   "bugs": "https://github.com/artichoke/cactusref/issues",
