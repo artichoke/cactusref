@@ -47,6 +47,21 @@ Like [`std::rc`](https://doc.rust-lang.org/std/rc/index.html),
 `!`[`Send`](https://doc.rust-lang.org/nightly/core/marker/trait.Send.html) and
 `!`[`Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html).
 
+## ⚠️ Safety
+
+`CactusRef` relies on proper use of
+[`Adoptable::adopt`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html#method.adopt)
+and
+[`Adoptable::unadopt`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html#method.unadopt)
+to maintain bookkeeping about the object graph for breaking cycles. These
+functions are unsafe because improperly managing the bookkeeping can cause the
+`Rc` `Drop` implementation to deallocate cycles while they are still externally
+reachable. All held `Rc`s that point to members of the now deallocated cycle
+will dangle.
+
+`CactusRef` makes a best-effort attempt to abort the program if an access to a
+dangling `Rc` occurs.
+
 ## Cycle Detection
 
 `Rc` implements
