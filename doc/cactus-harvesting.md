@@ -14,8 +14,8 @@ There was some
 [discussion on Reddit](https://www.reddit.com/r/rust/comments/cdk731/cactus_harvesting_cycleaware_reference_counting/)._
 
 🌵 CactusRef is a single-threaded, cycle-aware, reference counting smart pointer
-[[docs](https://lopopolo.github.io/ferrocarril/cactusref/index.html)]
-[[code](https://github.com/lopopolo/ferrocarril/tree/0052dc1d0b234c2535b8dd87a096e048bdc0819e/cactusref)].
+[[docs](https://artichoke.github.io/cactusref/cactusref/)]
+[[code](https://github.com/artichoke/cactusref/tree/252ded0caf9bd9c5814cd8020b44176a1edbeb9e)].
 CactusRef is nearly a drop-in replacement for
 [`std::rc`](https://doc.rust-lang.org/std/rc/index.html)[^std-rc-api-compat]
 from the Rust standard library. Throughout this post, `Rc` refers to
@@ -84,7 +84,7 @@ be reaped.
 ### Rust Example: Doubly Linked List
 
 CactusRef can be used to
-[implement a doubly linked list](https://github.com/lopopolo/ferrocarril/blob/53b4048628cd5577e378ce4fdae73a923340dcd1/cactusref/tests/no_leak_doubly_linked_list.rs)
+[implement a doubly linked list](https://github.com/artichoke/cactusref/blob/252ded0caf9bd9c5814cd8020b44176a1edbeb9e/tests/no_leak_doubly_linked_list.rs)
 with ergonomic strong references. The list is deallocated when the `list`
 binding is dropped because the linked list is no longer externally reachable.
 
@@ -179,13 +179,13 @@ drop(list);
 ### CactusRef Implementation
 
 There are two magic pieces to CactusRef: `Rc` adoption and the cycle-busting
-[`Drop`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html#impl-Drop)
+[`Drop`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html#impl-Drop)
 implementation.
 
 #### Adoption
 
 When an `Rc<T>` takes and holds an owned reference to another `Rc<T>`, calling
-[`Rc::adopt`](https://lopopolo.github.io/ferrocarril/cactusref/struct.Rc.html#impl-Adoptable)
+[`Rc::adopt`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html#impl-Adoptable)
 performs bookkeeping to build a graph of reachable objects. There is an
 unlinking API, `Rc::unadopt`, which removes a reference from the graph.
 
@@ -209,7 +209,7 @@ ary = nil
 
 This bookkeeping is implemented as a set of forward (owned) and backward (owned
 by) links stored on the data structure that backs the `Rc` (called an
-[`RcBox`](https://github.com/lopopolo/ferrocarril/blob/53b4048628cd5577e378ce4fdae73a923340dcd1/cactusref/src/ptr.rs#L84-L91)).
+[`RcBox`](https://github.com/artichoke/cactusref/blob/252ded0caf9bd9c5814cd8020b44176a1edbeb9e/src/ptr.rs#L105-L113)).
 
 #### Drop
 
@@ -247,7 +247,7 @@ externally reachable and the cycle is not orphaned. Detecting an orphaned cycle
 is `O(links + nodes)` where links is the number of active adoptions and nodes is
 the number of `Rc`s in the cycle.
 
-[Deallocating an orphaned cycle](https://github.com/lopopolo/ferrocarril/blob/53b4048628cd5577e378ce4fdae73a923340dcd1/cactusref/src/cycle/drop.rs#L163-L217)
+[Deallocating an orphaned cycle](https://github.com/artichoke/cactusref/blob/252ded0caf9bd9c5814cd8020b44176a1edbeb9e/src/cycle/drop.rs#L163-L217)
 is _fun_ and filled with unsafe peril. It is guaranteed that at least one other
 object in the cycle owns a reference to this `Rc`, so as we deallocate members
 of the cycle, this `Rc` will be dropped again.
@@ -261,16 +261,16 @@ if we are not careful.
 
 To avoid a double-free, the `RcBox` includes a `usize` field called `tombstone`.
 When we attempt to drop an `Rc` in the cycle we
-[mark it as killed](https://github.com/lopopolo/ferrocarril/blob/53b4048628cd5577e378ce4fdae73a923340dcd1/cactusref/src/cycle/drop.rs#L182-L193).
+[mark it as killed](https://github.com/artichoke/cactusref/blob/252ded0caf9bd9c5814cd8020b44176a1edbeb9e/src/cycle/drop.rs#L182-L193).
 Subsequent calls to `drop` on killed `Rc`s early return after decrementing the
 strong count.
 
 To avoid a use-after-free, on drop, an `Rc`
-[removes itself from all link tables](https://github.com/lopopolo/ferrocarril/blob/53b4048628cd5577e378ce4fdae73a923340dcd1/cactusref/src/cycle/drop.rs#L168-L181)
+[removes itself from all link tables](https://github.com/artichoke/cactusref/blob/252ded0caf9bd9c5814cd8020b44176a1edbeb9e/src/cycle/drop.rs#L168-L181)
 so it is not used for cycle detection.
 
 To do the deallocation,
-[drop the _values_ in the `Rc`s](https://github.com/lopopolo/ferrocarril/blob/53b4048628cd5577e378ce4fdae73a923340dcd1/cactusref/src/cycle/drop.rs#L194-L205)
+[drop the _values_ in the `Rc`s](https://github.com/artichoke/cactusref/blob/252ded0caf9bd9c5814cd8020b44176a1edbeb9e/src/cycle/drop.rs#L194-L205)
 instead of the `Rc`s. This breaks the cycle during the deallocation and allows
 `Drop` to crawl the object graph.
 
