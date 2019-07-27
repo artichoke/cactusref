@@ -43,6 +43,18 @@
 //!
 //! Like [`std::rc`], [`Rc`] and [`Weak`] are `!`[`Send`] and `!`[`Sync`].
 //!
+//! ## ⚠️ Safety
+//!
+//! `CactusRef` relies on proper use of [`Adoptable::adopt`] and
+//! [`Adoptable::unadopt`] to maintain bookkeeping about the object graph for
+//! breaking cycles. These functions are unsafe because improperly managing the
+//! bookkeeping can cause the `Rc` `Drop` implementation to deallocate cycles
+//! while they are still externally reachable. All held `Rc`s that point to
+//! members of the now deallocated cycle will dangle.
+//!
+//! `CactusRef` makes a best-effort attempt to abort the program if an access to
+//! a dangling `Rc` occurs.
+//!
 //! ## Cycle Detection
 //!
 //! `Rc` implements [`Adoptable`] to log bookkeeping entries for strong
