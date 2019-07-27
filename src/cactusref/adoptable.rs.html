@@ -164,6 +164,10 @@
 <span id="164">164</span>
 <span id="165">165</span>
 <span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">link</span>::<span class="ident">Link</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">ptr</span>::<span class="ident">RcBoxPtr</span>;
@@ -206,15 +210,17 @@
     <span class="doccomment">/// time `adopt` is called, although it may be safe to call adopt before the</span>
     <span class="doccomment">/// reference is held.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Safety</span>
+    <span class="doccomment">/// # ⚠️ Safety</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Modifying the object graph by removing links after calling `adopt`</span>
-    <span class="doccomment">/// requires updating the bookkeeping with [`unadopt`](Adoptable::unadopt).</span>
-    <span class="doccomment">/// Failure to properly remove links from the object graph may cause `Drop`</span>
-    <span class="doccomment">/// to detect a cycle is not externally reachable, reulting in prematurely</span>
-    <span class="doccomment">/// deallocating the entire cycle and turning all reachable [`Rc`]s into</span>
-    <span class="doccomment">/// dangling pointers. `CactusRef` makes a best-effort attempt to abort the</span>
-    <span class="doccomment">/// program if an access to a dead `Rc` occurs.</span>
+    <span class="doccomment">/// `CactusRef` relies on proper use of [`Adoptable::adopt`] and</span>
+    <span class="doccomment">/// [`Adoptable::unadopt`] to maintain bookkeeping about the object graph</span>
+    <span class="doccomment">/// for breaking cycles. These functions are unsafe because improperly</span>
+    <span class="doccomment">/// managing the bookkeeping can cause the `Rc` `Drop` implementation to</span>
+    <span class="doccomment">/// deallocate cycles while they are still externally reachable. All held</span>
+    <span class="doccomment">/// `Rc`s that point to members of the now deallocated cycle will dangle.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// `CactusRef` makes a best-effort attempt to abort the program if an</span>
+    <span class="doccomment">/// access to a dangling `Rc` occurs.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -272,15 +278,17 @@
     <span class="doccomment">/// by the time `unadopt` is called, although it may be safe to call adopt</span>
     <span class="doccomment">/// before the reference is held.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Safety</span>
+    <span class="doccomment">/// # ⚠️ Safety</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Modifying the object graph by removing links after calling</span>
-    <span class="doccomment">/// [`adopt`](Adoptable::adopt) requires updating the bookkeeping with</span>
-    <span class="doccomment">/// `unadopt`.  Failure to properly remove links from the object graph may</span>
-    <span class="doccomment">/// cause `Drop` to detect a cycle is not externally reachable, reulting in</span>
-    <span class="doccomment">/// prematurely deallocating the entire cycle and turning all reachable</span>
-    <span class="doccomment">/// [`Rc`]s into dangling pointers. `CactusRef` makes a best-effort attempt</span>
-    <span class="doccomment">/// to abort the program if an access to a dead `Rc` occurs.</span>
+    <span class="doccomment">/// `CactusRef` relies on proper use of [`Adoptable::adopt`] and</span>
+    <span class="doccomment">/// [`Adoptable::unadopt`] to maintain bookkeeping about the object graph</span>
+    <span class="doccomment">/// for breaking cycles. These functions are unsafe because improperly</span>
+    <span class="doccomment">/// managing the bookkeeping can cause the `Rc` `Drop` implementation to</span>
+    <span class="doccomment">/// deallocate cycles while they are still externally reachable. All held</span>
+    <span class="doccomment">/// `Rc`s that point to members of the now deallocated cycle will dangle.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// `CactusRef` makes a best-effort attempt to abort the program if an</span>
+    <span class="doccomment">/// access to a dangling `Rc` occurs.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>

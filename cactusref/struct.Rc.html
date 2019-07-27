@@ -171,22 +171,23 @@ pointers to this value will be dissassociated.</p>
 
 <span class="macro">assert</span><span class="macro">!</span>(<span class="number">76</span> <span class="op">==</span> <span class="kw-2">*</span><span class="ident">data</span>);
 <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">weak</span>.<span class="ident">upgrade</span>().<span class="ident">is_none</span>());</pre></div>
-</div></div><h2 id='implementations' class='small-section-header'>Trait Implementations<a href='#implementations' class='anchor'></a></h2><div id='implementations-list'><h3 id='impl-Adoptable' class='impl'><code class='in-band'>impl&lt;T:&nbsp;?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>&gt; <a class="trait" href="../cactusref/trait.Adoptable.html" title="trait cactusref::Adoptable">Adoptable</a> for <a class="struct" href="../cactusref/struct.Rc.html" title="struct cactusref::Rc">Rc</a>&lt;T&gt;</code><a href='#impl-Adoptable' class='anchor'></a><a class='srclink' href='../src/cactusref/adoptable.rs.html#34-166' title='goto source code'>[src]</a></h3><div class='docblock'><p>Implementation of <a href="../cactusref/trait.Adoptable.html" title="`Adoptable`"><code>Adoptable</code></a> for <a href="../cactusref/struct.Rc.html" title="`Rc`"><code>Rc</code></a> which enables <code>Rc</code>s to form a
+</div></div><h2 id='implementations' class='small-section-header'>Trait Implementations<a href='#implementations' class='anchor'></a></h2><div id='implementations-list'><h3 id='impl-Adoptable' class='impl'><code class='in-band'>impl&lt;T:&nbsp;?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>&gt; <a class="trait" href="../cactusref/trait.Adoptable.html" title="trait cactusref::Adoptable">Adoptable</a> for <a class="struct" href="../cactusref/struct.Rc.html" title="struct cactusref::Rc">Rc</a>&lt;T&gt;</code><a href='#impl-Adoptable' class='anchor'></a><a class='srclink' href='../src/cactusref/adoptable.rs.html#34-170' title='goto source code'>[src]</a></h3><div class='docblock'><p>Implementation of <a href="../cactusref/trait.Adoptable.html" title="`Adoptable`"><code>Adoptable</code></a> for <a href="../cactusref/struct.Rc.html" title="`Rc`"><code>Rc</code></a> which enables <code>Rc</code>s to form a
 cycle of strong references that are reaped by <code>Rc</code>'s <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html" title="`Drop`"><code>Drop</code></a>
 implementation.</p>
-</div><div class='impl-items'><h4 id='method.adopt' class="method"><code id='adopt.v'>unsafe fn <a href='../cactusref/trait.Adoptable.html#tymethod.adopt' class='fnname'>adopt</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a class='srclink' href='../src/cactusref/adoptable.rs.html#80-99' title='goto source code'>[src]</a></h4><div class='docblock'><p>Perform bookkeeping to record that <code>this</code> holds an owned reference to
+</div><div class='impl-items'><h4 id='method.adopt' class="method"><code id='adopt.v'>unsafe fn <a href='../cactusref/trait.Adoptable.html#tymethod.adopt' class='fnname'>adopt</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a class='srclink' href='../src/cactusref/adoptable.rs.html#82-101' title='goto source code'>[src]</a></h4><div class='docblock'><p>Perform bookkeeping to record that <code>this</code> holds an owned reference to
 <code>other</code>.</p>
 <p><code>Drop</code> expects that <code>this</code> currently holds a refernce to <code>other</code> by the
 time <code>adopt</code> is called, although it may be safe to call adopt before the
 reference is held.</p>
-<h1 id="safety" class="section-header"><a href="#safety">Safety</a></h1>
-<p>Modifying the object graph by removing links after calling <code>adopt</code>
-requires updating the bookkeeping with <a href="../cactusref/trait.Adoptable.html#tymethod.unadopt"><code>unadopt</code></a>.
-Failure to properly remove links from the object graph may cause <code>Drop</code>
-to detect a cycle is not externally reachable, reulting in prematurely
-deallocating the entire cycle and turning all reachable <a href="../cactusref/struct.Rc.html" title="`Rc`"><code>Rc</code></a>s into
-dangling pointers. <code>CactusRef</code> makes a best-effort attempt to abort the
-program if an access to a dead <code>Rc</code> occurs.</p>
+<h1 id="-safety" class="section-header"><a href="#-safety">⚠️ Safety</a></h1>
+<p><code>CactusRef</code> relies on proper use of <a href="../cactusref/trait.Adoptable.html#tymethod.adopt" title="`Adoptable::adopt`"><code>Adoptable::adopt</code></a> and
+<a href="../cactusref/trait.Adoptable.html#tymethod.unadopt" title="`Adoptable::unadopt`"><code>Adoptable::unadopt</code></a> to maintain bookkeeping about the object graph
+for breaking cycles. These functions are unsafe because improperly
+managing the bookkeeping can cause the <code>Rc</code> <code>Drop</code> implementation to
+deallocate cycles while they are still externally reachable. All held
+<code>Rc</code>s that point to members of the now deallocated cycle will dangle.</p>
+<p><code>CactusRef</code> makes a best-effort attempt to abort the program if an
+access to a dangling <code>Rc</code> occurs.</p>
 <h1 id="examples-11" class="section-header"><a href="#examples-11">Examples</a></h1>
 <p>The following implements a self-referential array.</p>
 
@@ -213,19 +214,20 @@ program if an access to a dead <code>Rc</code> occurs.</p>
 <span class="ident">drop</span>(<span class="ident">array</span>);
 <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">weak</span>.<span class="ident">upgrade</span>().<span class="ident">is_none</span>());
 <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">weak</span>.<span class="ident">weak_count</span>(), <span class="prelude-val">Some</span>(<span class="number">1</span>));</pre></div>
-</div><h4 id='method.unadopt' class="method"><code id='unadopt.v'>unsafe fn <a href='../cactusref/trait.Adoptable.html#tymethod.unadopt' class='fnname'>unadopt</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a class='srclink' href='../src/cactusref/adoptable.rs.html#152-165' title='goto source code'>[src]</a></h4><div class='docblock'><p>Perform bookkeeping to record that <code>this</code> no longer holds an owned
+</div><h4 id='method.unadopt' class="method"><code id='unadopt.v'>unsafe fn <a href='../cactusref/trait.Adoptable.html#tymethod.unadopt' class='fnname'>unadopt</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a class='srclink' href='../src/cactusref/adoptable.rs.html#156-169' title='goto source code'>[src]</a></h4><div class='docblock'><p>Perform bookkeeping to record that <code>this</code> no longer holds an owned
 reference to <code>other</code>.</p>
 <p><code>Drop</code> expects that <code>this</code> currently does not hold a refernce to <code>other</code>
 by the time <code>unadopt</code> is called, although it may be safe to call adopt
 before the reference is held.</p>
-<h1 id="safety-1" class="section-header"><a href="#safety-1">Safety</a></h1>
-<p>Modifying the object graph by removing links after calling
-<a href="../cactusref/trait.Adoptable.html#tymethod.adopt"><code>adopt</code></a> requires updating the bookkeeping with
-<code>unadopt</code>.  Failure to properly remove links from the object graph may
-cause <code>Drop</code> to detect a cycle is not externally reachable, reulting in
-prematurely deallocating the entire cycle and turning all reachable
-<a href="../cactusref/struct.Rc.html" title="`Rc`"><code>Rc</code></a>s into dangling pointers. <code>CactusRef</code> makes a best-effort attempt
-to abort the program if an access to a dead <code>Rc</code> occurs.</p>
+<h1 id="-safety-1" class="section-header"><a href="#-safety-1">⚠️ Safety</a></h1>
+<p><code>CactusRef</code> relies on proper use of <a href="../cactusref/trait.Adoptable.html#tymethod.adopt" title="`Adoptable::adopt`"><code>Adoptable::adopt</code></a> and
+<a href="../cactusref/trait.Adoptable.html#tymethod.unadopt" title="`Adoptable::unadopt`"><code>Adoptable::unadopt</code></a> to maintain bookkeeping about the object graph
+for breaking cycles. These functions are unsafe because improperly
+managing the bookkeeping can cause the <code>Rc</code> <code>Drop</code> implementation to
+deallocate cycles while they are still externally reachable. All held
+<code>Rc</code>s that point to members of the now deallocated cycle will dangle.</p>
+<p><code>CactusRef</code> makes a best-effort attempt to abort the program if an
+access to a dangling <code>Rc</code> occurs.</p>
 <h1 id="examples-12" class="section-header"><a href="#examples-12">Examples</a></h1>
 <p>The following implements a self-referential array.</p>
 

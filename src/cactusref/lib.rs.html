@@ -194,6 +194,18 @@
 <span id="194">194</span>
 <span id="195">195</span>
 <span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">feature</span>(
     <span class="ident">allocator_api</span>,
@@ -239,6 +251,18 @@
 <span class="doccomment">//! [`std::rc`].</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Like [`std::rc`], [`Rc`] and [`Weak`] are `!`[`Send`] and `!`[`Sync`].</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! ## ⚠️ Safety</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! `CactusRef` relies on proper use of [`Adoptable::adopt`] and</span>
+<span class="doccomment">//! [`Adoptable::unadopt`] to maintain bookkeeping about the object graph for</span>
+<span class="doccomment">//! breaking cycles. These functions are unsafe because improperly managing the</span>
+<span class="doccomment">//! bookkeeping can cause the `Rc` `Drop` implementation to deallocate cycles</span>
+<span class="doccomment">//! while they are still externally reachable. All held `Rc`s that point to</span>
+<span class="doccomment">//! members of the now deallocated cycle will dangle.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! `CactusRef` makes a best-effort attempt to abort the program if an access to</span>
+<span class="doccomment">//! a dangling `Rc` occurs.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Cycle Detection</span>
 <span class="doccomment">//!</span>
