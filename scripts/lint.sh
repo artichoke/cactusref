@@ -40,7 +40,7 @@ shfmt -f . | grep -v target/ | grep -v node_modules/ | xargs shellcheck
 ./scripts/format-text.sh --format "yaml"
 ./scripts/format-text.sh --format "yml"
 ## Lint with eslint
-yarn run eslint --fix --ext .html,.js .
+# yarn run eslint --fix --ext .html,.js .
 
 # Text sources
 
