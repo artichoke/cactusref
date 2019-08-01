@@ -41,10 +41,34 @@ jobs:
           name: Check Docs
           command: |
             cargo doc --no-deps --all
+          environment:
+            RUSTDOCFLAGS: "-Z unstable-options --enable-index-page"
       - persist_to_workspace:
           root: target
           paths:
             - doc
+  js:
+    docker:
+      - image: circleci/node:lts
+    steps:
+      - checkout
+      - restore_cache:
+          key: js-yarn-v2-{{ checksum "yarn.lock" }}
+      - run: yarn install
+      - save_cache:
+          key: js-yarn-v2-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+            - node_modules
+      - run:
+          name: yarn check
+          command: |
+            yarn check --integrity
+            yarn check --verify-tree
+      - run:
+          name: Lint JavaScript with eslint
+          command: |
+            # yarn run eslint --ext .html,.js .
   shell-format:
     docker:
       - image: peterdavehello/shfmt:latest
@@ -61,23 +85,23 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: text-yarn-v1-{{ checksum "yarn.lock" }}
-      - run:
-          name: Yarn Install
-          command: yarn install
+          key: text-yarn-v2-{{ checksum "yarn.lock" }}
+      - run: yarn install
       - save_cache:
-          key: text-yarn-v1-{{ checksum "yarn.lock" }}
+          key: text-yarn-v2-{{ checksum "yarn.lock" }}
           paths:
             - ~/.cache/yarn
+            - node_modules
       - run:
           name: Format Text Sources
           command: |
-            yarn run prettier --version
-            if ! yarn run prettier --check --prose-wrap always './*.{css,html,js,json,md}' '{!(target),!(node_modules)}**/*.{css,html,js,json,md}'; then
-              echo "KO: Text files not formatted"
-              echo "    Please run 'yarn lint' to resolve text formatting issues"
-              exit 1
-            fi
+            ./scripts/format-text.sh --check "css"
+            ./scripts/format-text.sh --check "html"
+            ./scripts/format-text.sh --check "js"
+            ./scripts/format-text.sh --check "json"
+            ./scripts/format-text.sh --check "yaml"
+            ./scripts/format-text.sh --check "yml"
+            ./scripts/format-text.sh --check "md"
   docs-deploy:
     docker:
       - image: node:8.10.0
@@ -90,13 +114,12 @@ jobs:
           at: target
       - restore_cache:
           key: docs-yarn-v1-{{ checksum "yarn.lock" }}
-      - run:
-          name: Yarn Install
-          command: yarn install
+      - run: yarn install
       - save_cache:
           key: docs-yarn-v1-{{ checksum "yarn.lock" }}
           paths:
             - ~/.cache/yarn
+            - node_modules
       - run:
           name: Configure git
           command: |
@@ -110,6 +133,7 @@ workflows:
   build:
     jobs:
       - rust
+      - js
       - shell-format
       - shellcheck/check
       - text
