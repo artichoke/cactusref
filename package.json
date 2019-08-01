@@ -32,12 +32,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.5.5",
     "babel-eslint": "^10.0.1",
-    "babel-preset-env": "^1.6.1",
     "clang-format": "^1.2.4",
     "eslint": "^5.11.1",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-html": "^6.0.0",
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-jsx-a11y": "^6.0.2",
     "eslint-plugin-prettier": "^3.0.1",
@@ -50,7 +51,7 @@
   },
   "babel": {
     "presets": [
-      "env"
+      "@babel/preset-env"
     ]
   },
   "eslintConfig": {
@@ -62,6 +63,7 @@
     },
     "parser": "babel-eslint",
     "plugins": [
+      "html",
       "prettier"
     ],
     "extends": [
