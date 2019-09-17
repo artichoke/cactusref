@@ -8,8 +8,8 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Calculate dependencies
-        command: test -e Cargo.lock || cargo generate-lockfile
+          name: Calculate dependencies
+          command: test -e Cargo.lock || cargo generate-lockfile
       - restore_cache:
           key: rust-cargo-v2-{{ checksum "Cargo.lock" }}
       - run:
