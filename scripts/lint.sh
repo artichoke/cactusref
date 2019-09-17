@@ -26,9 +26,9 @@ cargo doc --no-deps --all
 # Shell sources
 
 ## Format with shfmt
-shfmt -f . | grep -v target/ | grep -v node_modules/ | xargs shfmt -i 2 -ci -s -w
+shfmt -f . | grep -v target/ | grep -v node_modules/ | grep -v /vendor/ | xargs shfmt -i 2 -ci -s -w
 ## Lint with shellcheck
-shfmt -f . | grep -v target/ | grep -v node_modules/ | xargs shellcheck
+shfmt -f . | grep -v target/ | grep -v node_modules/ | grep -v /vendor/ | xargs shellcheck
 
 # Web sources
 

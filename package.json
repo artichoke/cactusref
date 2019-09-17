@@ -50,9 +50,7 @@
     "prettier-eslint": "^9.0.0"
   },
   "babel": {
-    "presets": [
-      "@babel/preset-env"
-    ]
+    "presets": ["@babel/preset-env"]
   },
   "eslintConfig": {
     "env": {
@@ -62,14 +60,8 @@
       "node": true
     },
     "parser": "babel-eslint",
-    "plugins": [
-      "html",
-      "prettier"
-    ],
-    "extends": [
-      "airbnb",
-      "prettier"
-    ],
+    "plugins": ["html", "prettier"],
+    "extends": ["airbnb", "prettier"],
     "rules": {
       "prettier/prettier": "error",
       "react/jsx-closing-bracket-location": "off",
