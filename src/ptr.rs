@@ -21,15 +21,17 @@ pub trait RcBoxPtr<T: ?Sized> {
         // We want to abort on overflow instead of dropping the value.
         // nevertheless, we insert an abort here to hint LLVM at
         // an otherwise missed optimization.
-        if self.strong() == 0 || self.strong() == usize::max_value() {
+        let strong_count = self.strong();
+        if strong_count == 0 || strong_count == usize::MAX {
             abort();
         }
-        self.inner().strong.set(self.strong() + 1);
+        // guaranteed not to overflow by the abort above.
+        self.inner().strong.set(strong_count + 1);
     }
 
     #[inline]
     fn dec_strong(&self) {
-        self.inner().strong.set(self.strong() - 1);
+        self.inner().strong.set(self.strong().saturating_sub(1));
     }
 
     #[inline]
@@ -43,15 +45,17 @@ pub trait RcBoxPtr<T: ?Sized> {
         // The reference count will never be zero when this is called;
         // nevertheless, we insert an abort here to hint LLVM at
         // an otherwise missed optimization.
-        if self.weak() == 0 || self.weak() == usize::max_value() {
+        let weak_count = self.weak();
+        if weak_count == 0 || weak_count == usize::MAX {
             abort();
         }
-        self.inner().weak.set(self.weak() + 1);
+        // guaranteed not to overflow by the abort above.
+        self.inner().weak.set(weak_count + 1);
     }
 
     #[inline]
     fn dec_weak(&self) {
-        self.inner().weak.set(self.weak() - 1);
+        self.inner().weak.set(self.weak().saturating_sub(1));
     }
 
     #[inline]
@@ -142,10 +146,12 @@ pub fn data_offset_sized<T>() -> isize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use core::mem::size_of;
+
+    use super::RcBox;
 
     #[test]
     fn sizeof_rcbox() {
-        assert_eq!(mem::size_of::<RcBox<()>>(), 64);
+        assert_eq!(size_of::<RcBox<()>>(), 88);
     }
 }

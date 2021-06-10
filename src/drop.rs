@@ -118,15 +118,26 @@ unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
         self.dec_strong();
 
         unsafe {
+            // If links is empty, the object is either not in a cycle or
+            // part of a cycle that has been link busted for deallocation.
             if self.inner().links.borrow().is_empty() {
-                // If links is empty, the object is either not in a cycle or
-                // part of a cycle that has been link busted for deallocation.
-                if self.strong() == 0 {
+                // If the object was never in a cycle, `dec_strong` above will
+                // kill the `Rc`.
+                //
+                // If the object was in a cycle, the `Rc` will only be dead if
+                // all strong references to it have been dropped.
+                if self.is_dead() {
                     drop_unreachable(self);
                 }
-            } else if let Some(cycle) = Self::orphaned_cycle(self) {
+                // otherwise, ignore the pointed to object; it will be dropped
+                // when there are no more remaining strong references to it.
+                return;
+            }
+            if let Some(cycle) = Self::orphaned_cycle(self) {
                 drop_cycle(self, cycle);
-            } else if self.strong() == 0 {
+                return;
+            }
+            if self.is_dead() {
                 drop_unreachable_with_adoptions(self);
             }
         }
@@ -139,11 +150,13 @@ unsafe fn drop_unreachable<T: ?Sized>(this: &mut Rc<T>) {
     // Remove reverse links so `this` is not included in cycle detection for
     // objects that had adopted `this`. This prevents a use-after-free in
     // `Rc::orphaned_cycle`.
-    for (item, &strong) in this.inner().links.borrow().iter() {
+    let links = &this.inner().links;
+    for (item, &strong) in links.borrow().iter() {
         if let Kind::Backward = item.link_kind() {
-            let mut links = item.inner().links.borrow_mut();
-            links.remove(forward, strong);
-            links.remove(backward, strong);
+            if let Ok(mut links) = links.try_borrow_mut() {
+                links.remove(forward, strong);
+                links.remove(backward, strong);
+            }
         }
     }
     // Mark `this` as pending deallocation. This is not strictly necessary since
@@ -169,9 +182,13 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         "cactusref detected orphaned cycle with {} objects",
         cycle.len()
     );
-    for (ptr, refcount) in &cycle {
+    // Iterate over all the nodes in the cycle, bust all of the links. All nodes
+    // in the cycle are only reachable by other nodes in the cycle, so removing
+    // all links won't result in a leak.
+    for (ptr, &refcount) in &cycle {
         trace!(
-            "cactusref dropping member of orphaned cycle with refcount {}",
+            "cactusref dropping {:?} member of orphaned cycle with refcount {}",
+            ptr,
             refcount
         );
 
@@ -184,8 +201,12 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         // deallocate. This allows us to bust the cycle detection by clearing
         // all links.
         let item = ptr.inner();
-        let mut links = item.links.borrow_mut();
-        links.clear();
+        let cycle_strong_refs = {
+            let mut links = item.links.borrow_mut();
+            links
+                .drain_filter(|link, _| cycle.contains_key(link))
+                .count()
+        };
 
         // To be in a cycle, at least one `value` field in an `RcBox` in the
         // cycle holds a strong reference to `this`. Mark all nodes in the cycle
@@ -193,23 +214,47 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         // get a double-free.
         let mut ptr = ptr.into_raw_non_null();
         let item = ptr.as_mut();
-        item.kill();
+        for _ in 0..cycle_strong_refs {
+            item.dec_strong();
+        }
     }
     for (ptr, _) in cycle {
-        if ptr.as_ptr() == this.ptr.as_ptr() {
+        if ptr::eq(ptr.as_ptr(), this.ptr.as_ptr()) {
             // Do not drop `this` until the rest of the cycle is deallocated.
+            continue;
+        }
+        if !ptr.is_dead() {
+            // This object continues to be referenced outside the cycle in
+            // another part of the graph.
             continue;
         }
         trace!("cactusref deallocating wrapped value of cycle member");
         let mut ptr = ptr.into_raw_non_null();
+        trace!(
+            "cactusref deallocating RcBox after dropping item {:?} in orphaned cycle",
+            ptr
+        );
         let item = ptr.as_mut();
-        // Bust the cycle by deallocating the value that this `Rc` wraps. This
-        // is safe to do and leave the value field uninitialized because we are
-        // deallocating the entire linked structure.
-        ptr::drop_in_place(&mut item.value as *mut T);
+        // destroy the contained object
+        ptr::drop_in_place(item);
+
+        // remove the implicit "strong weak" pointer now that we've
+        // destroyed the contents.
+        item.dec_weak();
+
+        if ptr.as_ref().weak() == 0 {
+            trace!(
+                "no more weak references, deallocating layout for item {:?} in orphaned cycle",
+                ptr
+            );
+            dealloc(ptr.as_ptr().cast(), Layout::for_value(this.ptr.as_ref()));
+        }
     }
     // destroy the contained object
-    trace!("cactusref deallocating RcBox after dropping all cycle members");
+    trace!(
+        "cactusref deallocating RcBox after dropping item {:?} in orphaned cycle",
+        this.ptr
+    );
     ptr::drop_in_place(this.ptr.as_mut());
 
     // remove the implicit "strong weak" pointer now that we've
@@ -217,7 +262,10 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
     this.dec_weak();
 
     if this.weak() == 0 {
-        trace!("no more weak references, deallocating layout");
+        trace!(
+            "no more weak references, deallocating layout for item {:?} in orphaned cycle",
+            this.ptr
+        );
         dealloc(
             this.ptr.cast().as_mut(),
             Layout::for_value(this.ptr.as_ref()),
@@ -228,22 +276,29 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
 unsafe fn drop_unreachable_with_adoptions<T: ?Sized>(this: &mut Rc<T>) {
     let forward = Link::forward(this.ptr);
     let backward = Link::backward(this.ptr);
-    // `this` is unreachable but may have been adopted and dropped. Remove
-    // reverse links so `Drop` does not try to reference the link we are about
-    // to deallocate when doing cycle detection. This removes `self` from the
-    // cycle detection loop. This prevents a use-after-free in
-    // `Rc::orphaned_cycle`.
-    for (item, &strong) in this.inner().links.borrow().iter() {
-        let mut links = item.inner().links.borrow_mut();
-        links.remove(forward, strong);
-        links.remove(backward, strong);
+    // `this` is unreachable but may have been adopted and dropped.
+    //
+    // Iterate over all of the other nodes in the graph that have links to
+    // `this` and remove all of the adoptions. By doing so, when other graph
+    // participants are dropped, they do not try to deallocate `this`.
+    //
+    // `this` is fully removed from the graph.
+    let links = &this.inner().links;
+    for (item, &strong) in links.borrow().iter() {
+        if let Ok(mut links) = item.inner().links.try_borrow_mut() {
+            links.remove(forward, strong);
+            links.remove(backward, strong);
+        }
     }
-    this.inner().links.borrow_mut().clear();
+    links.borrow_mut().clear();
 
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
     this.kill();
-    trace!("cactusref deallocating adopted and unreachable member of object graph");
+    trace!(
+        "cactusref deallocating RcBox after dropping adopted and unreachable item {:?} in the object graph",
+        this.ptr
+    );
     // destroy the contained object
     ptr::drop_in_place(this.ptr.as_mut());
 
@@ -252,6 +307,10 @@ unsafe fn drop_unreachable_with_adoptions<T: ?Sized>(this: &mut Rc<T>) {
     this.dec_weak();
 
     if this.weak() == 0 {
+        trace!(
+            "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
+            this.ptr
+        );
         dealloc(
             this.ptr.cast().as_mut(),
             Layout::for_value(this.ptr.as_ref()),
