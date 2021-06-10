@@ -12,7 +12,7 @@ impl<T: ?Sized> Rc<T> {
         }
         let has_external_owners = cycle
             .iter()
-            .any(|(item, cycle_owned_refs)| item.strong() > *cycle_owned_refs);
+            .any(|(item, &cycle_owned_refs)| item.strong() > cycle_owned_refs);
         if has_external_owners {
             None
         } else {

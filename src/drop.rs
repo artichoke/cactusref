@@ -133,12 +133,12 @@ unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
                 // when there are no more remaining strong references to it.
                 return;
             }
-            if let Some(cycle) = Self::orphaned_cycle(self) {
-                drop_cycle(self, cycle);
-                return;
-            }
             if self.is_dead() {
                 drop_unreachable_with_adoptions(self);
+                return;
+            }
+            if let Some(cycle) = Self::orphaned_cycle(self) {
+                drop_cycle(self, cycle);
             }
         }
     }
@@ -202,9 +202,15 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         let item = ptr.inner();
         let cycle_strong_refs = {
             let mut links = item.links.borrow_mut();
-            links
+            let mut count = 0;
+            let removed = links
                 .drain_filter(|link, _| cycle.contains_key(link))
-                .count()
+                .collect::<Vec<_>>();
+            for (_, strong) in removed {
+                count += 1;
+                links.remove(Link::backward(this.ptr), strong);
+            }
+            count
         };
 
         // To be in a cycle, at least one `value` field in an `RcBox` in the
@@ -284,6 +290,11 @@ unsafe fn drop_unreachable_with_adoptions<T: ?Sized>(this: &mut Rc<T>) {
     // `this` is fully removed from the graph.
     let links = &this.inner().links;
     for (item, &strong) in links.borrow().iter() {
+        // if `this` has adopted itself, we don't need to clear these links in
+        // the loop to avoid an already borrowed error.
+        if ptr::eq(this.ptr.as_ptr(), item.as_ptr()) {
+            continue;
+        }
         let mut links = item.inner().links.borrow_mut();
         links.remove(forward, strong);
         links.remove(backward, strong);
