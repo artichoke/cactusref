@@ -4,12 +4,8 @@ use crate::link::{Kind, Link};
 use crate::ptr::RcBoxPtr;
 use crate::Rc;
 
-pub trait Cyclic<T: ?Sized> {
-    fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>>;
-}
-
-impl<T: ?Sized> Cyclic<T> for Rc<T> {
-    fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>> {
+impl<T: ?Sized> Rc<T> {
+    pub(crate) fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>> {
         let cycle = cycle_refs(Link::forward(this.ptr));
         if cycle.is_empty() {
             return None;

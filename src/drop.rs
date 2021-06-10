@@ -2,7 +2,6 @@ use alloc::alloc::{dealloc, Layout};
 use core::ptr;
 use hashbrown::HashMap;
 
-use crate::cyclic::Cyclic;
 use crate::link::{Kind, Link};
 use crate::ptr::RcBoxPtr;
 use crate::Rc;
@@ -139,7 +138,7 @@ unsafe fn drop_unreachable<T: ?Sized>(this: &mut Rc<T>) {
     let backward = Link::backward(this.ptr);
     // Remove reverse links so `this` is not included in cycle detection for
     // objects that had adopted `this`. This prevents a use-after-free in
-    // `Cyclic::orphaned_cycle`.
+    // `Rc::orphaned_cycle`.
     for (item, &strong) in this.inner().links.borrow().iter() {
         if let Kind::Backward = item.link_kind() {
             let mut links = item.inner().links.borrow_mut();
@@ -178,7 +177,7 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
 
         // Remove reverse links so `this` is not included in cycle detection for
         // objects that had adopted `this`. This prevents a use-after-free in
-        // `Cyclic::orphaned_cycle`.
+        // `Rc::orphaned_cycle`.
         //
         // Because the entire cycle is unreachable, the only forward and
         // backward links are to objects in the cycle that we are about to
@@ -233,7 +232,7 @@ unsafe fn drop_unreachable_with_adoptions<T: ?Sized>(this: &mut Rc<T>) {
     // reverse links so `Drop` does not try to reference the link we are about
     // to deallocate when doing cycle detection. This removes `self` from the
     // cycle detection loop. This prevents a use-after-free in
-    // `Cyclic::orphaned_cycle`.
+    // `Rc::orphaned_cycle`.
     for (item, &strong) in this.inner().links.borrow().iter() {
         let mut links = item.inner().links.borrow_mut();
         links.remove(forward, strong);
