@@ -153,10 +153,9 @@ unsafe fn drop_unreachable<T: ?Sized>(this: &mut Rc<T>) {
     let links = &this.inner().links;
     for (item, &strong) in links.borrow().iter() {
         if let Kind::Backward = item.link_kind() {
-            if let Ok(mut links) = links.try_borrow_mut() {
-                links.remove(forward, strong);
-                links.remove(backward, strong);
-            }
+            let mut links = links.borrow_mut();
+            links.remove(forward, strong);
+            links.remove(backward, strong);
         }
     }
     // Mark `this` as pending deallocation. This is not strictly necessary since
@@ -285,10 +284,9 @@ unsafe fn drop_unreachable_with_adoptions<T: ?Sized>(this: &mut Rc<T>) {
     // `this` is fully removed from the graph.
     let links = &this.inner().links;
     for (item, &strong) in links.borrow().iter() {
-        if let Ok(mut links) = item.inner().links.try_borrow_mut() {
-            links.remove(forward, strong);
-            links.remove(backward, strong);
-        }
+        let mut links = item.inner().links.borrow_mut();
+        links.remove(forward, strong);
+        links.remove(backward, strong);
     }
     links.borrow_mut().clear();
 
