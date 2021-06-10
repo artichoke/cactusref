@@ -202,32 +202,20 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         let item = ptr.inner();
         let cycle_strong_refs = {
             let mut links = item.links.borrow_mut();
-            let mut count = 0;
-            let removed = links
-                .drain_filter(|link, _| cycle.contains_key(link))
-                .collect::<Vec<_>>();
-            for (_, strong) in removed {
-                count += 1;
-                links.remove(Link::backward(this.ptr), strong);
-            }
-            count
+            links
+                .drain_filter(|link, _| cycle.contains_key(&link.as_forward()))
+                .count()
         };
 
         // To be in a cycle, at least one `value` field in an `RcBox` in the
         // cycle holds a strong reference to `this`. Mark all nodes in the cycle
         // as dead so when we deallocate them via the `value` pointer we don't
         // get a double-free.
-        let mut ptr = ptr.into_raw_non_null();
-        let item = ptr.as_mut();
         for _ in 0..cycle_strong_refs {
             item.dec_strong();
         }
     }
     for (ptr, _) in cycle {
-        if ptr::eq(ptr.as_ptr(), this.ptr.as_ptr()) {
-            // Do not drop `this` until the rest of the cycle is deallocated.
-            continue;
-        }
         if !ptr.is_dead() {
             // This object continues to be referenced outside the cycle in
             // another part of the graph.
@@ -254,27 +242,6 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
             );
             dealloc(ptr.as_ptr().cast(), Layout::for_value(this.ptr.as_ref()));
         }
-    }
-    // destroy the contained object
-    trace!(
-        "cactusref deallocating RcBox after dropping item {:?} in orphaned cycle",
-        this.ptr
-    );
-    ptr::drop_in_place(this.ptr.as_mut());
-
-    // remove the implicit "strong weak" pointer now that we've
-    // destroyed the contents.
-    this.dec_weak();
-
-    if this.weak() == 0 {
-        trace!(
-            "no more weak references, deallocating layout for item {:?} in orphaned cycle",
-            this.ptr
-        );
-        dealloc(
-            this.ptr.cast().as_mut(),
-            Layout::for_value(this.ptr.as_ref()),
-        );
     }
 }
 
