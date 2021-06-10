@@ -1,7 +1,7 @@
-use core::mem;
+use alloc::alloc::{dealloc, Layout};
+use core::cell::{Cell, RefCell};
+use core::mem::{self, ManuallyDrop};
 use core::ptr::{self, NonNull};
-use std::alloc::{dealloc, Layout};
-use std::cell::{Cell, RefCell};
 use std::process::abort;
 
 use crate::link::Links;
@@ -80,8 +80,16 @@ impl<T: ?Sized> RcBoxPtr<T> for RcBox<T> {
 pub struct RcBox<T: ?Sized> {
     pub strong: Cell<usize>,
     pub weak: Cell<usize>,
-    pub links: RefCell<Links<T>>,
+    pub links: ManuallyDrop<RefCell<Links<T>>>,
     pub value: T,
+}
+
+impl<T: ?Sized> Drop for RcBox<T> {
+    fn drop(&mut self) {
+        unsafe {
+            ManuallyDrop::drop(&mut self.links);
+        }
+    }
 }
 
 pub fn is_dangling<T: ?Sized>(ptr: NonNull<T>) -> bool {

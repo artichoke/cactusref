@@ -1,12 +1,10 @@
-#![deny(clippy::all, clippy::pedantic)]
-#![deny(warnings, intra_doc_link_resolution_failure)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 #![allow(clippy::shadow_unrelated)]
 
 use cactusref::{Adoptable, Rc};
-use std::cell::RefCell;
-use std::iter;
-
-mod leak;
+use core::cell::RefCell;
+use core::iter;
 
 struct Node<T> {
     pub prev: Option<Rc<RefCell<Self>>>,
@@ -92,18 +90,18 @@ impl<T> From<Vec<T>> for List<T> {
 fn leak_doubly_linked_list() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
-    leak::Detector::new("doubly linked list", None, None).check_leaks(|_| {
-        let list = iter::repeat(())
-            .map(|_| "a".repeat(1024 * 1024))
-            .take(10)
-            .collect::<Vec<_>>();
-        let mut list = List::from(list);
-        let head = list.pop().unwrap();
-        assert_eq!(Rc::strong_count(&head), 1);
-        assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
-        let weak = Rc::downgrade(&head);
-        drop(head);
-        assert!(weak.upgrade().is_none());
-        drop(list);
-    });
+    log::info!("doubly linked list");
+
+    let list = iter::repeat(())
+        .map(|_| "a".repeat(1024 * 1024))
+        .take(10)
+        .collect::<Vec<_>>();
+    let mut list = List::from(list);
+    let head = list.pop().unwrap();
+    assert_eq!(Rc::strong_count(&head), 1);
+    assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
+    let weak = Rc::downgrade(&head);
+    drop(head);
+    assert!(weak.upgrade().is_none());
+    drop(list);
 }

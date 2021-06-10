@@ -1,6 +1,6 @@
+use alloc::alloc::{dealloc, Layout};
 use core::ptr;
 use hashbrown::HashMap;
-use std::alloc::{Alloc, Global, Layout};
 
 use crate::cyclic::Cyclic;
 use crate::link::{Kind, Link};
@@ -158,7 +158,10 @@ unsafe fn drop_unreachable<T: ?Sized>(this: &mut Rc<T>) {
     this.dec_weak();
 
     if this.weak() == 0 {
-        Global.dealloc(this.ptr.cast(), Layout::for_value(this.ptr.as_ref()));
+        dealloc(
+            this.ptr.cast().as_mut(),
+            Layout::for_value(this.ptr.as_ref()),
+        );
     }
 }
 
@@ -207,7 +210,7 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
         ptr::drop_in_place(&mut item.value as *mut T);
     }
     // destroy the contained object
-    trace!("cactusref deallocating self after dropping all cycle members");
+    trace!("cactusref deallocating RcBox after dropping all cycle members");
     ptr::drop_in_place(this.ptr.as_mut());
 
     // remove the implicit "strong weak" pointer now that we've
@@ -215,7 +218,11 @@ unsafe fn drop_cycle<T: ?Sized>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>
     this.dec_weak();
 
     if this.weak() == 0 {
-        Global.dealloc(this.ptr.cast(), Layout::for_value(this.ptr.as_ref()));
+        trace!("no more weak references, deallocating layout");
+        dealloc(
+            this.ptr.cast().as_mut(),
+            Layout::for_value(this.ptr.as_ref()),
+        );
     }
 }
 
@@ -246,6 +253,9 @@ unsafe fn drop_unreachable_with_adoptions<T: ?Sized>(this: &mut Rc<T>) {
     this.dec_weak();
 
     if this.weak() == 0 {
-        Global.dealloc(this.ptr.cast(), Layout::for_value(this.ptr.as_ref()));
+        dealloc(
+            this.ptr.cast().as_mut(),
+            Layout::for_value(this.ptr.as_ref()),
+        );
     }
 }

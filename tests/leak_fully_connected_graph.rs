@@ -1,11 +1,9 @@
-#![deny(clippy::all, clippy::pedantic)]
-#![deny(warnings, intra_doc_link_resolution_failure)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 #![allow(clippy::shadow_unrelated)]
 
 use cactusref::{Adoptable, Rc};
-use std::cell::RefCell;
-
-mod leak;
+use core::cell::RefCell;
 
 struct Node<T> {
     _data: T,
@@ -36,10 +34,10 @@ fn fully_connected_graph(count: usize) -> Vec<Rc<RefCell<Node<String>>>> {
 fn leak_fully_connected_graph() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
-    leak::Detector::new("fully-connected graph", None, None).check_leaks(|_| {
-        let list = fully_connected_graph(10);
-        drop(Rc::clone(&list[0]));
-        assert_eq!(Rc::strong_count(&list[0]), 11);
-        drop(list);
-    });
+    log::info!("fully-connected graph");
+
+    let list = fully_connected_graph(10);
+    drop(Rc::clone(&list[0]));
+    assert_eq!(Rc::strong_count(&list[0]), 11);
+    drop(list);
 }

@@ -1,5 +1,5 @@
-#![deny(clippy::all, clippy::pedantic)]
-#![deny(warnings, intra_doc_link_resolution_failure)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 
 use cactusref::{Adoptable, Rc};
 use std::cell::RefCell;

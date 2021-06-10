@@ -1,16 +1,15 @@
+use alloc::alloc::{alloc, dealloc, Layout};
 use core::borrow;
 use core::cell::{Cell, RefCell};
 use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::{PhantomData, Unpin};
-use core::mem;
+use core::mem::{self, ManuallyDrop};
 use core::ops::Deref;
 use core::pin::Pin;
 use core::ptr::{self, NonNull};
 use core::slice;
-
-use std::alloc::{handle_alloc_error, Alloc, Global, Layout};
 use std::process::abort;
 
 use crate::link::Links;
@@ -60,17 +59,19 @@ impl<T> Rc<T> {
     /// let five = Rc::new(5);
     /// ```
     pub fn new(value: T) -> Self {
-        Self {
+        let ptr = Box::new(RcBox {
+            strong: Cell::new(1),
             // there is an implicit weak pointer owned by all the strong
             // pointers, which ensures that the weak destructor never frees
             // the allocation while the strong destructor is running, even
             // if the weak pointer is stored inside the strong one.
-            ptr: Box::into_raw_non_null(Box::new(RcBox {
-                strong: Cell::new(1),
-                weak: Cell::new(1),
-                links: RefCell::new(Links::default()),
-                value,
-            })),
+            weak: Cell::new(1),
+            links: ManuallyDrop::new(RefCell::new(Links::default())),
+            value,
+        });
+        let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(ptr)) };
+        Self {
+            ptr,
             phantom: PhantomData,
         }
     }
@@ -442,27 +443,27 @@ impl<T: ?Sized> Rc<T> {
             .extend(Layout::for_value(&*ptr))
             .unwrap()
             .0
-            .pad_to_align()
-            .unwrap();
+            .pad_to_align();
 
-        let mem = Global
-            .alloc(layout)
-            .unwrap_or_else(|_| handle_alloc_error(layout));
+        let mem = alloc(layout);
 
         // Initialize the RcBox
-        let inner = set_data_ptr(ptr as *mut T, mem.as_ptr() as *mut u8) as *mut RcBox<T>;
+        let inner = set_data_ptr(ptr as *mut T, mem) as *mut RcBox<T>;
         debug_assert_eq!(Layout::for_value(&*inner), layout);
 
         ptr::write(&mut (*inner).strong, Cell::new(1));
         ptr::write(&mut (*inner).weak, Cell::new(1));
-        ptr::write(&mut (*inner).links, RefCell::new(Links::default()));
+        ptr::write(
+            &mut (*inner).links,
+            ManuallyDrop::new(RefCell::new(Links::default())),
+        );
 
         inner
     }
 
     fn from_box(v: Box<T>) -> Self {
         unsafe {
-            let box_unique = Box::into_raw_non_null(v);
+            let box_unique = NonNull::new_unchecked(Box::into_raw(v));
             let box_ptr = box_unique.as_ptr();
 
             let value_size = mem::size_of_val(&*box_ptr);
@@ -526,7 +527,7 @@ impl<T: Clone> RcFromSlice<T> for Rc<[T]> {
                     let slice = slice::from_raw_parts_mut(self.elems, self.n_elems);
                     ptr::drop_in_place(slice);
 
-                    Global.dealloc(self.mem, self.layout);
+                    dealloc(self.mem.as_mut(), self.layout);
                 }
             }
         }

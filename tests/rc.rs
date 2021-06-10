@@ -1,10 +1,9 @@
-#![deny(clippy::all, clippy::pedantic)]
-#![deny(warnings, intra_doc_link_resolution_failure)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 #![allow(clippy::empty_enum, clippy::eq_op)]
 
 use cactusref::{Rc, Weak};
-use std::cell::RefCell;
-use std::cmp::PartialEq;
+use core::cell::RefCell;
 
 #[test]
 fn uninhabited() {

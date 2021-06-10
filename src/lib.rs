@@ -1,12 +1,8 @@
-#![feature(
-    allocator_api,
-    alloc_layout_extra,
-    box_into_raw_non_null,
-    dropck_eyepatch,
-    specialization
-)]
-#![deny(warnings, intra_doc_link_resolution_failure, missing_docs)]
-#![deny(clippy::all, clippy::pedantic)]
+#![feature(allocator_api, alloc_layout_extra, dropck_eyepatch, specialization)]
+#![allow(incomplete_features)]
+#![deny(broken_intra_doc_links, missing_docs)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 
 //! # 🌵 `CactusRef`
 //!
@@ -184,6 +180,7 @@
 //! // all memory consumed by the list nodes is reclaimed.
 //! ```
 
+extern crate alloc;
 #[macro_use]
 extern crate log;
 

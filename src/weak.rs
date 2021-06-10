@@ -1,8 +1,8 @@
+use alloc::alloc::{dealloc, Layout};
+use core::fmt;
 use core::marker::PhantomData;
 use core::mem;
 use core::ptr::{self, NonNull};
-use std::alloc::{Alloc, Global, Layout};
-use std::fmt;
 
 use crate::ptr::{data_offset, data_offset_sized, is_dangling, set_data_ptr, RcBox, RcBoxPtr};
 use crate::Rc;
@@ -343,7 +343,10 @@ impl<T: ?Sized> Drop for Weak<T> {
             // the strong pointers have disappeared.
             if inner.weak() == 0 {
                 unsafe {
-                    Global.dealloc(self.ptr.cast(), Layout::for_value(self.ptr.as_ref()));
+                    dealloc(
+                        self.ptr.cast().as_mut(),
+                        Layout::for_value(self.ptr.as_ref()),
+                    );
                 }
             }
         }
