@@ -76,7 +76,7 @@ unsafe impl<T> Adoptable for Rc<T> {
     /// assert_eq!(Rc::strong_count(&array), 11);
     /// drop(array);
     /// assert!(weak.upgrade().is_none());
-    /// assert_eq!(weak.weak_count(), Some(1));
+    /// assert_eq!(weak.weak_count(), 0);
     /// ```
     unsafe fn adopt(this: &Self, other: &Self) {
         // Adoption signals the intent to take an owned reference to `other`, so
@@ -87,7 +87,7 @@ unsafe impl<T> Adoptable for Rc<T> {
 
         // Store a forward reference to `other` in `this`. This bookkeeping logs
         // a strong reference and is used for discovering cycles.
-        let mut links = this.inner().links.borrow_mut();
+        let mut links = this.inner().links().borrow_mut();
         links.insert(Link::forward(other.ptr));
         // `this` and `other` may be the same `Rc`. Drop the borrow on `links`
         // before accessing `other` to avoid a already borrowed error from the
@@ -95,7 +95,7 @@ unsafe impl<T> Adoptable for Rc<T> {
         drop(links);
         // Store a backward reference to `this` in `other`. This bookkeeping is
         // used for discovering cycles.
-        let mut links = other.inner().links.borrow_mut();
+        let mut links = other.inner().links().borrow_mut();
         links.insert(Link::backward(this.ptr));
     }
 
@@ -150,12 +150,12 @@ unsafe impl<T> Adoptable for Rc<T> {
     /// assert_eq!(Rc::strong_count(&array), 10);
     /// drop(array);
     /// assert!(weak.upgrade().is_none());
-    /// assert_eq!(weak.weak_count(), Some(1));
+    /// assert_eq!(weak.weak_count(), 0);
     /// ```
     unsafe fn unadopt(this: &Self, other: &Self) {
         // Remove a forward reference to `other` in `this`. This bookkeeping
         // logs a strong reference and is used for discovering cycles.
-        let mut links = this.inner().links.borrow_mut();
+        let mut links = this.inner().links().borrow_mut();
         links.remove(Link::forward(other.ptr), 1);
         // `this` and `other` may be the same `Rc`. Drop the borrow on `links`
         // before accessing `other` to avoid a already borrowed error from the
@@ -163,7 +163,7 @@ unsafe impl<T> Adoptable for Rc<T> {
         drop(links);
         // Remove a backward reference to `this` in `other`. This bookkeeping is
         // used for discovering cycles.
-        let mut links = other.inner().links.borrow_mut();
+        let mut links = other.inner().links().borrow_mut();
         links.remove(Link::backward(this.ptr), 1);
     }
 }

@@ -260,6 +260,9 @@ use alloc::boxed::Box;
 
 use crate::link::Links;
 
+#[cfg(test)]
+mod tests;
+
 // This is repr(C) to future-proof against possible field-reordering, which
 // would interfere with otherwise safe [into|from]_raw() of transmutable
 // inner types.
@@ -267,8 +270,18 @@ use crate::link::Links;
 pub(crate) struct RcBox<T> {
     strong: Cell<usize>,
     weak: Cell<usize>,
-    pub links: RefCell<Links<T>>,
+    pub links: MaybeUninit<RefCell<Links<T>>>,
     pub value: MaybeUninit<T>,
+}
+
+impl<T> RcBox<T> {
+    /// # Safety
+    ///
+    /// Callers must ensure this `RcBox` is not dead.
+    #[inline]
+    pub(crate) unsafe fn links(&self) -> &RefCell<Links<T>> {
+        mem::transmute(&self.links)
+    }
 }
 
 /// A single-threaded reference-counting pointer. 'Rc' stands for 'Reference
@@ -325,7 +338,7 @@ impl<T> Rc<T> {
             Box::leak(Box::new(RcBox {
                 strong: Cell::new(1),
                 weak: Cell::new(1),
-                links: RefCell::new(Links::default()),
+                links: MaybeUninit::new(RefCell::new(Links::default())),
                 value: MaybeUninit::new(value),
             }))
             .into(),
@@ -355,11 +368,13 @@ impl<T> Rc<T> {
     /// ```
     pub fn new_uninit() -> Rc<mem::MaybeUninit<T>> {
         unsafe {
-            Rc::from_ptr(Rc::allocate_for_layout(
+            let mut rc = Rc::from_ptr(Rc::allocate_for_layout(
                 Layout::new::<T>(),
                 |layout| Global.allocate(layout),
                 |mem| mem as *mut RcBox<mem::MaybeUninit<T>>,
-            ))
+            ));
+            rc.ptr.as_mut().links = MaybeUninit::new(RefCell::new(Links::default()));
+            rc
         }
     }
 
@@ -896,6 +911,10 @@ impl<T> Rc<T> {
 
         ptr::write(&mut (*inner).strong, Cell::new(1));
         ptr::write(&mut (*inner).weak, Cell::new(1));
+        ptr::write(
+            &mut (*inner).links,
+            MaybeUninit::new(RefCell::new(Links::default())),
+        );
 
         Ok(inner)
     }
@@ -1456,7 +1475,7 @@ impl<T> Weak<T> {
     /// ```
     pub fn upgrade(&self) -> Option<Rc<T>> {
         let inner = self.inner()?;
-        if inner.strong() == 0 {
+        if inner.is_dead() {
             None
         } else {
             inner.inc_strong();
@@ -1688,7 +1707,7 @@ pub(crate) trait RcInnerPtr {
 
     #[inline]
     fn dec_strong(&self) {
-        self.strong_ref().set(self.strong().saturating_sub(1));
+        self.strong_ref().set(self.strong() - 1);
     }
 
     #[inline]
@@ -1712,7 +1731,7 @@ pub(crate) trait RcInnerPtr {
 
     #[inline]
     fn dec_weak(&self) {
-        self.weak_ref().set(self.weak().saturating_sub(1));
+        self.weak_ref().set(self.weak() - 1);
     }
 
     #[inline]

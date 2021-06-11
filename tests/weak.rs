@@ -38,6 +38,6 @@ fn weak() {
 
     drop(array);
 
+    assert_eq!(weak.weak_count(), 0);
     assert!(weak.upgrade().is_none());
-    assert_eq!(weak.weak_count(), 1);
 }

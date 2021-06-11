@@ -36,7 +36,7 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
             continue;
         }
         visited.insert(node);
-        let links = node.as_ref().links.borrow();
+        let links = unsafe { node.as_ref().links().borrow() };
         for (link, strong) in links.iter() {
             if let Kind::Forward = link.link_kind() {
                 cycle_owned_refs
