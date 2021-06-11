@@ -1491,7 +1491,11 @@ impl<T> Weak<T> {
     /// If `self` was created using [`Weak::new`], this will return 0.
     pub fn strong_count(&self) -> usize {
         if let Some(inner) = self.inner() {
-            inner.strong()
+            if inner.is_uninit() {
+                0
+            } else {
+                inner.strong()
+            }
         } else {
             0
         }
@@ -1503,7 +1507,9 @@ impl<T> Weak<T> {
     pub fn weak_count(&self) -> usize {
         self.inner()
             .map(|inner| {
-                if inner.strong() > 0 {
+                if inner.is_uninit() {
+                    0
+                } else if inner.strong() > 0 {
                     inner.weak() - 1 // subtract the implicit weak ptr
                 } else {
                     0
@@ -1522,18 +1528,13 @@ impl<T> Weak<T> {
             // We are careful to *not* create a reference covering the "data" field, as
             // the field may be mutated concurrently (for example, if the last `Rc`
             // is dropped, the data field will be dropped in-place).
-            let inner = unsafe {
+            Some(unsafe {
                 let ptr = self.ptr.as_ptr();
                 WeakInner {
                     strong: &(*ptr).strong,
                     weak: &(*ptr).weak,
                 }
-            };
-            if inner.is_dead() {
-                None
-            } else {
-                Some(inner)
-            }
+            })
         }
     }
 

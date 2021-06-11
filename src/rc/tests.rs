@@ -1,7 +1,12 @@
 use std::cell::RefCell;
-use std::mem::drop;
+use std::mem::{drop, size_of};
 
-use crate::{Rc, Weak};
+use super::{Rc, RcBox, Weak};
+
+#[test]
+fn size_of_rcbox() {
+    assert_eq!(size_of::<RcBox<i32>>(), 96);
+}
 
 #[test]
 fn test_clone() {

@@ -268,7 +268,7 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
             trace!("cactusref deconstructed member {:p} of orphan cycle", rcbox);
             // Move `T` and the `HashMap` out of the `RcBox` to be dropped after
             // busting the cycle.
-            inners.push((inner, links));
+            inners.push((inner.assume_init(), links.assume_init()));
         }
     }
     // Drop and deallocate all `T` and `HashMap` objects.
