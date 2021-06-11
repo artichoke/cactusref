@@ -1519,13 +1519,18 @@ impl<T> Weak<T> {
             // We are careful to *not* create a reference covering the "data" field, as
             // the field may be mutated concurrently (for example, if the last `Rc`
             // is dropped, the data field will be dropped in-place).
-            Some(unsafe {
+            let inner = unsafe {
                 let ptr = self.ptr.as_ptr();
                 WeakInner {
                     strong: &(*ptr).strong,
                     weak: &(*ptr).weak,
                 }
-            })
+            };
+            if inner.is_dead() {
+                None
+            } else {
+                Some(inner)
+            }
         }
     }
 
