@@ -140,6 +140,7 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
             }
             if let Some(cycle) = Self::orphaned_cycle(self) {
                 drop_cycle(self, cycle);
+                return;
             }
             debug!("cactusref drop skipped, Rc is reachable");
         }
@@ -161,17 +162,25 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
             links.remove(backward, strong);
         }
     }
+
+    let rcbox = this.ptr.as_mut();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
-    let rcbox = this.ptr.as_mut();
     if !rcbox.is_uninit() {
         trace!("cactusref deallocating unreachable RcBox {:p}", rcbox);
+        // Mark the `RcBox` as uninitialized so we can make its `MaybeUninit`
+        // fields uninhabited.
         rcbox.make_uninit();
+
+        // Move `T` out of the `RcBox`. Dropping an uninitialized `MaybeUninit`
+        // has no effect.
         let inner = mem::replace(&mut rcbox.value, MaybeUninit::uninit());
         // destroy the contained `T`.
         drop(inner.assume_init());
-        // Destroy the heap-allocated links.
+        // Move the links `HashMap` out of the `RcBox`. Dropping an uninitialized
+        // `MaybeUninit` has no effect.
         let links = mem::replace(&mut rcbox.links, MaybeUninit::uninit());
+        // Destroy the heap-allocated links.
         drop(links.assume_init());
     }
 
@@ -193,8 +202,8 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
         cycle.len()
     );
     // Iterate over all the nodes in the cycle, bust all of the links. All nodes
-    // in the cycle are only reachable by other nodes in the cycle, so removing
-    // all links won't result in a leak.
+    // in the cycle are reachable by other nodes in the cycle, so removing
+    // all cycle-internal links won't result in a leak.
     for (ptr, &refcount) in &cycle {
         trace!(
             "cactusref dropping {:?} member of orphaned cycle with refcount {}",
@@ -233,6 +242,7 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
             rcbox.dec_strong();
         }
     }
+
     let mut inners = vec![];
     for (ptr, _) in &cycle {
         if !ptr.is_dead() {
@@ -245,26 +255,42 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
         let rcbox = ptr.as_mut();
 
         if !rcbox.is_uninit() {
+            // Mark the `RcBox` as uninitialized so we can make its
+            // `MaybeUninit` fields uninhabited.
             rcbox.make_uninit();
+
+            // Move `T` out of the `RcBox`. Dropping an uninitialized
+            // `MaybeUninit` has no effect.
             let inner = mem::replace(&mut rcbox.value, MaybeUninit::uninit());
-            // destroy the contained `T`.
-            let inner = inner.assume_init();
-            // Destroy the heap-allocated links.
+            // Move the links `HashMap` out of the `RcBox`. Dropping an
+            // uninitialized `MaybeUninit` has no effect.
             let links = mem::replace(&mut rcbox.links, MaybeUninit::uninit());
-            let links = links.assume_init();
-            inners.push((inner, links));
             trace!("cactusref deconstructed member {:p} of orphan cycle", rcbox);
+            // Move `T` and the `HashMap` out of the `RcBox` to be dropped after
+            // busting the cycle.
+            inners.push((inner, links));
         }
     }
+    // Drop and deallocate all `T` and `HashMap` objects.
     drop(inners);
 
-    for (ptr, _) in cycle {
-        if !ptr.is_dead() {
-            // This object continues to be referenced outside the cycle in
-            // another part of the graph.
-            continue;
-        }
+    let unreachable_cycle_participants = cycle.into_iter().map(|(ptr, _)| ptr).filter(|ptr| {
+        // Filter the set of cycle participants so we only drop `Rc`s that are
+        // dead.
+        //
+        // If an `Rc` is not dead, it continues to be referenced outside of the
+        // cycle, for example:
+        //
+        //  | Rc | -> | Rc | -> | Rc | <-> | Rc |
+        //    ^                   |
+        //    |-------------------|
+        //
+        // This object continues to be referenced outside the cycle in another
+        // part of the graph.
+        ptr.is_dead()
+    });
 
+    for ptr in unreachable_cycle_participants {
         let mut ptr = ptr.into_raw_non_null();
         trace!(
             "cactusref deallocating RcBox after dropping item {:?} in orphaned cycle",
@@ -272,8 +298,8 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
         );
 
         let rcbox = ptr.as_mut();
-        // remove the implicit "strong weak" pointer now that we've
-        // destroyed the contents.
+        // remove the implicit "strong weak" pointer now that we've destroyed
+        // the contents.
         rcbox.dec_weak();
 
         if rcbox.weak() == 0 {
@@ -286,8 +312,31 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
     }
 }
 
+// Drop an `Rc` that is unreachable, but has adopted other `Rc`s.
+//
+// Unreachable `Rc`s have a strong count of zero, but because they have adopted
+// other `Rc`s, other `Rc`s have back links to `this`.
+//
+// Before dropping `this`, we must traverse `this`'s forward links to collect
+// all of `this`'s adoptions. Then, remove `this` from it's adoptions back
+// links. By pruning back links in the rest of the graph, we can ensure that
+// `this` and its `RcBox` are not referenced and can be safely deallocated.
+//
+// # Diagram
+//
+//          this
+// |--------------------|
+// | ptr:    RcBox      |
+// |      |----------| <--------|
+// |      | value: T |  |       |
+// |      | links: ------> | other RcBox |
+// |      |   |----------> | other RcBox |
+// |      |          |  |       |
+// |      |----------| <--------|
+// |--------------------|
 unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
-    dbg!(this.inner().strong());
+    // Construct a forward and back link from `this` so we can
+    // purge it from the adopted `links`.
     let forward = Link::forward(this.ptr);
     let backward = Link::backward(this.ptr);
     // `this` is unreachable but may have been adopted and dropped.
@@ -301,13 +350,23 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
     for (item, &strong) in links.borrow().iter() {
         // if `this` has adopted itself, we don't need to clear these links in
         // the loop to avoid an already borrowed error.
-        if ptr::eq(this.ptr.as_ptr(), item.as_ptr()) {
+        if ptr::eq(this.inner(), item.as_ptr()) {
             continue;
         }
         let mut links = item.as_ref().links().borrow_mut();
+        // The cycle counts don't distinguish which nodes the cycle strong
+        // counts are from, so purge as many strong counts as possible.
+        //
+        // Additionally, `item` may have forward adoptions for `this`, so
+        // purge those as well.
+        //
+        // `Links::remove` ensures the count for forward and back links will not
+        // underflow.
         links.remove(forward, strong);
         links.remove(backward, strong);
     }
+    // Bust the links for this since it is now unreachable and set to be
+    // deallocated.
     links.borrow_mut().clear();
 
     let rcbox = this.ptr.as_mut();
@@ -318,17 +377,24 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
             "cactusref deallocating RcBox after dropping adopted and unreachable item {:p} in the object graph",
             rcbox
         );
+        // Mark the `RcBox` as uninitialized so we can make its `MaybeUninit`
+        // fields uninhabited.
         rcbox.make_uninit();
+
+        // Move `T` out of the `RcBox`. Dropping an uninitialized `MaybeUninit`
+        // has no effect.
         let inner = mem::replace(&mut rcbox.value, MaybeUninit::uninit());
         // destroy the contained `T`.
         drop(inner.assume_init());
-        // Destroy the heap-allocated links.
+        // Move the links `HashMap` out of the `RcBox`. Dropping an uninitialized
+        // `MaybeUninit` has no effect.
         let links = mem::replace(&mut rcbox.links, MaybeUninit::uninit());
+        // Destroy the heap-allocated links.
         drop(links.assume_init());
     }
 
-    // remove the implicit "strong weak" pointer now that we've
-    // destroyed the contents.
+    // remove the implicit "strong weak" pointer now that we've destroyed the
+    // contents.
     rcbox.dec_weak();
 
     if rcbox.weak() == 0 {
@@ -342,50 +408,3 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
         );
     }
 }
-
-/*
-unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
-    /// Drops the `Rc`.
-    ///
-    /// This will decrement the strong reference count. If the strong reference
-    /// count reaches zero then the only other references (if any) are
-    /// [`Weak`], so we `drop` the inner value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::rc::Rc;
-    ///
-    /// struct Foo;
-    ///
-    /// impl Drop for Foo {
-    ///     fn drop(&mut self) {
-    ///         println!("dropped!");
-    ///     }
-    /// }
-    ///
-    /// let foo  = Rc::new(Foo);
-    /// let foo2 = Rc::clone(&foo);
-    ///
-    /// drop(foo);    // Doesn't print anything
-    /// drop(foo2);   // Prints "dropped!"
-    /// ```
-    fn drop(&mut self) {
-        unsafe {
-            self.inner().dec_strong();
-            if self.inner().strong() == 0 {
-                // destroy the contained object
-                ptr::drop_in_place(Self::get_mut_unchecked(self));
-
-                // remove the implicit "strong weak" pointer now that we've
-                // destroyed the contents.
-                self.inner().dec_weak();
-
-                if self.inner().weak() == 0 {
-                    Global.deallocate(self.ptr.cast(), Layout::for_value(self.ptr.as_ref()));
-                }
-            }
-        }
-    }
-}
-*/
