@@ -1350,6 +1350,9 @@ impl<T> Weak<T> {
             // SAFETY: if is_dangling returns false, then the pointer is dereferencable.
             // The payload may be dropped at this point, and we have to maintain provenance,
             // so use raw pointer manipulation.
+            //
+            // SAFETY: Because we are a live `Rc`, the `MaybeUninit` `value` is
+            // inhabited and can be transmuted to an initialized `T`.
             unsafe { mem::transmute(ptr::addr_of_mut!((*ptr).value)) }
         }
     }
