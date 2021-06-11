@@ -1,9 +1,10 @@
+use core::cell::Cell;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ptr::{self, NonNull};
 use hashbrown::{hash_map, HashMap};
 
-use crate::ptr::{RcBox, RcBoxPtr};
+use crate::rc::{RcBox, RcInnerPtr};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Kind {
@@ -11,7 +12,7 @@ pub enum Kind {
     Backward,
 }
 
-pub struct Links<T> {
+pub(crate) struct Links<T> {
     registry: HashMap<Link<T>, usize>,
 }
 
@@ -77,7 +78,7 @@ impl<T> Default for Links<T> {
     }
 }
 
-pub struct Link<T> {
+pub(crate) struct Link<T> {
     ptr: NonNull<RcBox<T>>,
     kind: Kind,
 }
@@ -124,14 +125,23 @@ impl<T> Link<T> {
     }
 
     #[inline]
+    pub fn as_ref(&self) -> &RcBox<T> {
+        unsafe { self.ptr.as_ref() }
+    }
+
+    #[inline]
     pub fn into_raw_non_null(self) -> NonNull<RcBox<T>> {
         self.ptr
     }
 }
 
-impl<T> RcBoxPtr<T> for Link<T> {
-    fn inner(&self) -> &RcBox<T> {
-        unsafe { self.ptr.as_ref() }
+impl<T> RcInnerPtr for Link<T> {
+    fn weak_ref(&self) -> &Cell<usize> {
+        unsafe { self.ptr.as_ref().weak_ref() }
+    }
+
+    fn strong_ref(&self) -> &Cell<usize> {
+        unsafe { self.ptr.as_ref().strong_ref() }
     }
 }
 

@@ -3,7 +3,10 @@
     alloc_layout_extra,
     core_intrinsics,
     dropck_eyepatch,
-    layout_for_ptr
+    layout_for_ptr,
+    ptr_internals,
+    set_ptr_value,
+    slice_ptr_get
 )]
 #![allow(incomplete_features)]
 #![deny(broken_intra_doc_links, missing_docs)]
@@ -194,15 +197,13 @@ mod adoptable;
 mod cyclic;
 mod drop;
 mod link;
-mod ptr;
 mod rc;
-#[cfg(test)]
-mod tests;
-mod weak;
+//#[cfg(test)]
+//mod tests;
 
 pub use adoptable::Adoptable;
 pub use rc::Rc;
-pub use weak::Weak;
+pub use rc::Weak;
 
 /// Cactus alias for [`Rc`].
 pub type CactusRef<T> = Rc<T>;

@@ -4,7 +4,7 @@ use hashbrown::HashMap;
 use std::mem::{self, MaybeUninit};
 
 use crate::link::{Kind, Link};
-use crate::ptr::RcBoxPtr;
+use crate::rc::RcInnerPtr;
 use crate::Rc;
 
 unsafe impl<#[may_dangle] T> Drop for Rc<T> {
@@ -108,7 +108,7 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
         // they will drop their refs to `self`. To prevent a double free, mark
         // nodes as dead if they have already been deallocated and short
         // circuit.
-        if self.is_dead() {
+        if self.inner().is_dead() {
             return;
         }
 
@@ -116,7 +116,7 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
         // is maintaining a strong count. Decrement the strong count on drop,
         // even if this `Rc` is dead. This ensures `Weak::upgrade` behaves
         // correctly for deallocated cycles and does not cause a use-after-free.
-        self.dec_strong();
+        self.inner().dec_strong();
 
         unsafe {
             // If links is empty, the object is either not in a cycle or
@@ -127,14 +127,14 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
                 //
                 // If the object was in a cycle, the `Rc` will only be dead if
                 // all strong references to it have been dropped.
-                if self.is_dead() {
+                if self.inner().is_dead() {
                     drop_unreachable(self);
                 }
                 // otherwise, ignore the pointed to object; it will be dropped
                 // when there are no more remaining strong references to it.
                 return;
             }
-            if self.is_dead() {
+            if self.inner().is_dead() {
                 drop_unreachable_with_adoptions(self);
                 return;
             }
@@ -161,8 +161,8 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     }
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
-    this.kill();
     let rcbox = this.ptr.as_mut();
+    rcbox.kill();
     let inner = mem::replace(&mut rcbox.value, MaybeUninit::uninit());
     // destroy the contained `T`.
     drop(inner.assume_init());
@@ -171,9 +171,9 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
 
     // remove the implicit "strong weak" pointer now that we've destroyed the
     // contents.
-    this.dec_weak();
+    rcbox.dec_weak();
 
-    if this.weak() == 0 {
+    if rcbox.weak() == 0 {
         dealloc(
             this.ptr.cast().as_mut(),
             Layout::for_value(this.ptr.as_ref()),
@@ -204,7 +204,7 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
         // backward links are to objects in the cycle that we are about to
         // deallocate. This allows us to bust the cycle detection by clearing
         // all links.
-        let item = ptr.inner();
+        let item = ptr.as_ref();
         let cycle_strong_refs = {
             let mut links = item.links.borrow_mut();
             links
@@ -233,7 +233,7 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
             ptr
         );
         let item = ptr.as_mut();
-        if item.is_initialized() {
+        if !item.is_uninit() {
             let inner = mem::replace(&mut item.value, MaybeUninit::uninit());
             // destroy the contained `T`.
             drop(inner.assume_init());
@@ -273,20 +273,20 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
         if ptr::eq(this.ptr.as_ptr(), item.as_ptr()) {
             continue;
         }
-        let mut links = item.inner().links.borrow_mut();
+        let mut links = item.as_ref().links.borrow_mut();
         links.remove(forward, strong);
         links.remove(backward, strong);
     }
     links.borrow_mut().clear();
 
+    let rcbox = this.ptr.as_mut();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
-    this.kill();
+    rcbox.kill();
     trace!(
-        "cactusref deallocating RcBox after dropping adopted and unreachable item {:?} in the object graph",
-        this.ptr
+        "cactusref deallocating RcBox after dropping adopted and unreachable item {:p} in the object graph",
+        rcbox
     );
-    let rcbox = this.ptr.as_mut();
     let inner = mem::replace(&mut rcbox.value, MaybeUninit::uninit());
     // destroy the contained `T`.
     drop(inner.assume_init());
@@ -295,9 +295,9 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
 
     // remove the implicit "strong weak" pointer now that we've
     // destroyed the contents.
-    this.dec_weak();
+    rcbox.dec_weak();
 
-    if this.weak() == 0 {
+    if rcbox.weak() == 0 {
         trace!(
             "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
             this.ptr
@@ -309,6 +309,7 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
     }
 }
 
+/*
 unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
     /// Drops the `Rc`.
     ///
@@ -353,3 +354,4 @@ unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
         }
     }
 }
+*/

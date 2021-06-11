@@ -1,5 +1,4 @@
 use crate::link::Link;
-use crate::ptr::RcBoxPtr;
 use crate::Rc;
 
 /// Perform bookkeeping to link two objects with an owned reference.

@@ -1,7 +1,7 @@
 use hashbrown::{HashMap, HashSet};
 
 use crate::link::{Kind, Link};
-use crate::ptr::RcBoxPtr;
+use crate::rc::RcInnerPtr;
 use crate::Rc;
 
 impl<T> Rc<T> {
@@ -36,7 +36,7 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
             continue;
         }
         visited.insert(node);
-        let links = node.inner().links.borrow();
+        let links = node.as_ref().links.borrow();
         for (link, strong) in links.iter() {
             if let Kind::Forward = link.link_kind() {
                 cycle_owned_refs
@@ -59,7 +59,7 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
 fn debug_cycle<T>(cycle: &HashMap<Link<T>, usize>) {
     let counts = cycle
         .iter()
-        .map(|(item, cycle_count)| (item.strong(), cycle_count))
+        .map(|(item, cycle_count)| (item.as_ref().strong(), cycle_count))
         .collect::<Vec<_>>();
     trace!(
         "cactusref reachability test found (strong, cycle) counts: {:?}",

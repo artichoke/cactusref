@@ -240,34 +240,35 @@
 //! [mutability]: core::cell#introducing-mutability-inside-of-something-immutable
 //! [fully qualified syntax]: https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#fully-qualified-syntax-for-disambiguation-calling-methods-with-the-same-name
 
-use alloc::boxed::Box;
-
 use core::borrow;
-use core::cell::Cell;
+use core::cell::{Cell, RefCell};
 use core::cmp::Ordering;
 use core::convert::From;
 use core::fmt;
 use core::hash::{Hash, Hasher};
-use core::intrinsics::abort;
+use core::intrinsics::{abort, min_align_of_val};
 use core::marker::{PhantomData, Unpin};
-use core::mem::size_of_val;
-use core::mem::{self, align_of_val_raw, forget};
+use core::mem::{self, align_of_val_raw, forget, size_of_val, ManuallyDrop, MaybeUninit};
 use core::ops::Deref;
 use core::pin::Pin;
-use core::ptr::{self, NonNull};
+use core::ptr::{self, NonNull, Unique};
 
 use alloc::alloc::handle_alloc_error;
 use alloc::alloc::{AllocError, Allocator, Global, Layout};
 use alloc::borrow::{Cow, ToOwned};
+use alloc::boxed::Box;
+
+use crate::link::Links;
 
 // This is repr(C) to future-proof against possible field-reordering, which
 // would interfere with otherwise safe [into|from]_raw() of transmutable
 // inner types.
 #[repr(C)]
-struct RcBox<T> {
+pub(crate) struct RcBox<T> {
     strong: Cell<usize>,
     weak: Cell<usize>,
-    value: T,
+    pub links: RefCell<Links<T>>,
+    pub value: MaybeUninit<T>,
 }
 
 /// A single-threaded reference-counting pointer. 'Rc' stands for 'Reference
@@ -281,13 +282,13 @@ struct RcBox<T> {
 ///
 /// [get_mut]: Rc::get_mut
 pub struct Rc<T> {
-    ptr: NonNull<RcBox<T>>,
+    pub(crate) ptr: NonNull<RcBox<T>>,
     phantom: PhantomData<RcBox<T>>,
 }
 
 impl<T> Rc<T> {
     #[inline(always)]
-    fn inner(&self) -> &RcBox<T> {
+    pub(crate) fn inner(&self) -> &RcBox<T> {
         // This unsafety is ok because while this Rc is alive we're guaranteed
         // that the inner pointer is valid.
         unsafe { self.ptr.as_ref() }
@@ -301,7 +302,7 @@ impl<T> Rc<T> {
     }
 
     unsafe fn from_ptr(ptr: *mut RcBox<T>) -> Self {
-        Self::from_inner(unsafe { NonNull::new_unchecked(ptr) })
+        Self::from_inner(NonNull::new_unchecked(ptr))
     }
 }
 
@@ -324,10 +325,42 @@ impl<T> Rc<T> {
             Box::leak(Box::new(RcBox {
                 strong: Cell::new(1),
                 weak: Cell::new(1),
-                value,
+                links: RefCell::new(Links::default()),
+                value: MaybeUninit::new(value),
             }))
             .into(),
         )
+    }
+
+    /// Constructs a new `Rc` with uninitialized contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(new_uninit)]
+    /// #![feature(get_mut_unchecked)]
+    ///
+    /// use std::rc::Rc;
+    ///
+    /// let mut five = Rc::<u32>::new_uninit();
+    ///
+    /// let five = unsafe {
+    ///     // Deferred initialization:
+    ///     Rc::get_mut_unchecked(&mut five).as_mut_ptr().write(5);
+    ///
+    ///     five.assume_init()
+    /// };
+    ///
+    /// assert_eq!(*five, 5)
+    /// ```
+    pub fn new_uninit() -> Rc<mem::MaybeUninit<T>> {
+        unsafe {
+            Rc::from_ptr(Rc::allocate_for_layout(
+                Layout::new::<T>(),
+                |layout| Global.allocate(layout),
+                |mem| mem as *mut RcBox<mem::MaybeUninit<T>>,
+            ))
+        }
     }
 
     /// Constructs a new `Pin<Rc<T>>`. If `T` does not implement `Unpin`, then
@@ -376,6 +409,44 @@ impl<T> Rc<T> {
     }
 }
 
+impl<T> Rc<MaybeUninit<T>> {
+    /// Converts to `Rc<T>`.
+    ///
+    /// # Safety
+    ///
+    /// As with [`MaybeUninit::assume_init`],
+    /// it is up to the caller to guarantee that the inner value
+    /// really is in an initialized state.
+    /// Calling this when the content is not yet fully initialized
+    /// causes immediate undefined behavior.
+    ///
+    /// [`MaybeUninit::assume_init`]: mem::MaybeUninit::assume_init
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(new_uninit)]
+    /// #![feature(get_mut_unchecked)]
+    ///
+    /// use std::rc::Rc;
+    ///
+    /// let mut five = Rc::<u32>::new_uninit();
+    ///
+    /// let five = unsafe {
+    ///     // Deferred initialization:
+    ///     Rc::get_mut_unchecked(&mut five).as_mut_ptr().write(5);
+    ///
+    ///     five.assume_init()
+    /// };
+    ///
+    /// assert_eq!(*five, 5)
+    /// ```
+    #[inline]
+    pub unsafe fn assume_init(self) -> Rc<T> {
+        Rc::from_inner(ManuallyDrop::new(self).ptr.cast())
+    }
+}
+
 impl<T> Rc<T> {
     /// Consumes the `Rc`, returning the wrapped pointer.
     ///
@@ -421,7 +492,7 @@ impl<T> Rc<T> {
         // SAFETY: This cannot go through Deref::deref or Rc::inner because
         // this is required to retain raw/mut provenance such that e.g. `get_mut` can
         // write through the pointer after the Rc is recovered through `from_raw`.
-        unsafe { ptr::addr_of_mut!((*ptr).value) }
+        unsafe { mem::transmute(ptr::addr_of_mut!((*ptr).value)) }
     }
 
     /// Constructs an `Rc<T>` from a raw pointer.
@@ -462,13 +533,12 @@ impl<T> Rc<T> {
     /// // The memory was freed when `x` went out of scope above, so `x_ptr` is now dangling!
     /// ```
     pub unsafe fn from_raw(ptr: *const T) -> Self {
-        let offset = unsafe { data_offset(ptr) };
+        let offset = data_offset(ptr);
 
         // Reverse the offset to find the original RcBox.
-        let rc_ptr =
-            unsafe { (ptr as *mut RcBox<T>).set_ptr_value((ptr as *mut u8).offset(-offset)) };
+        let rc_ptr = (ptr as *mut RcBox<T>).set_ptr_value((ptr as *mut u8).offset(-offset));
 
-        unsafe { Self::from_ptr(rc_ptr) }
+        Self::from_ptr(rc_ptr)
     }
 
     /// Creates a new [`Weak`] pointer to this allocation.
@@ -550,7 +620,7 @@ impl<T> Rc<T> {
     #[inline]
     pub unsafe fn increment_strong_count(ptr: *const T) {
         // Retain Rc, but don't touch refcount by wrapping in ManuallyDrop
-        let rc = unsafe { mem::ManuallyDrop::new(Rc::<T>::from_raw(ptr)) };
+        let rc = mem::ManuallyDrop::new(Rc::<T>::from_raw(ptr));
         // Now increase refcount, but don't drop new refcount either
         let _rc_clone: mem::ManuallyDrop<_> = rc.clone();
     }
@@ -585,7 +655,7 @@ impl<T> Rc<T> {
     /// ```
     #[inline]
     pub unsafe fn decrement_strong_count(ptr: *const T) {
-        unsafe { mem::drop(Rc::from_raw(ptr)) };
+        mem::drop(Rc::from_raw(ptr))
     }
 
     /// Returns `true` if there are no other `Rc` or [`Weak`] pointers to
@@ -659,7 +729,10 @@ impl<T> Rc<T> {
     pub unsafe fn get_mut_unchecked(this: &mut Self) -> &mut T {
         // We are careful to *not* create a reference covering the "count" fields, as
         // this would conflict with accesses to the reference counts (e.g. by `Weak`).
-        unsafe { &mut (*this.ptr.as_ptr()).value }
+        //
+        // Safety: If we have an `Rc`, then the allocation is not dead so the `MaybeUninit`
+        // is inhabited.
+        mem::transmute(&mut (*this.ptr.as_ptr()).value)
     }
 
     /// Returns `true` if the two `Rc`s point to the same allocation
@@ -742,14 +815,14 @@ impl<T: Clone> Rc<T> {
             let mut rc = Self::new_uninit();
             unsafe {
                 let data = Rc::get_mut_unchecked(&mut rc);
-                (**this).write_clone_into_raw(data.as_mut_ptr());
+                data.as_mut_ptr().write((&**this).clone());
                 *this = rc.assume_init();
             }
         } else if Rc::weak_count(this) != 0 {
             // Can just steal the data, all that's left is Weaks
             let mut rc = Self::new_uninit();
             unsafe {
-                let data = Rc::get_mut_unchecked(&mut rc);
+                let data: &mut MaybeUninit<T> = mem::transmute(Rc::get_mut_unchecked(&mut rc));
                 data.as_mut_ptr().copy_from_nonoverlapping(&**this, 1);
 
                 this.inner().dec_strong();
@@ -764,11 +837,11 @@ impl<T: Clone> Rc<T> {
         // reference count is guaranteed to be 1 at this point, and we required
         // the `Rc<T>` itself to be `mut`, so we're returning the only possible
         // reference to the allocation.
-        unsafe { &mut this.ptr.as_mut().value }
+        unsafe { mem::transmute(&mut this.ptr.as_mut().value) }
     }
 }
 
-impl<T: ?Sized> Rc<T> {
+impl<T> Rc<T> {
     /// Allocates an `RcBox<T>` with sufficient space for
     /// a possibly-unsized inner value where the value has the layout provided.
     ///
@@ -788,10 +861,8 @@ impl<T: ?Sized> Rc<T> {
             .unwrap()
             .0
             .pad_to_align();
-        unsafe {
-            Rc::try_allocate_for_layout(value_layout, allocate, mem_to_rcbox)
-                .unwrap_or_else(|_| handle_alloc_error(layout))
-        }
+        Rc::try_allocate_for_layout(value_layout, allocate, mem_to_rcbox)
+            .unwrap_or_else(|_| handle_alloc_error(layout))
     }
 
     /// Allocates an `RcBox<T>` with sufficient space for
@@ -821,12 +892,10 @@ impl<T: ?Sized> Rc<T> {
 
         // Initialize the RcBox
         let inner = mem_to_rcbox(ptr.as_non_null_ptr().as_ptr());
-        unsafe {
-            debug_assert_eq!(Layout::for_value(&*inner), layout);
+        debug_assert_eq!(Layout::for_value(&*inner), layout);
 
-            ptr::write(&mut (*inner).strong, Cell::new(1));
-            ptr::write(&mut (*inner).weak, Cell::new(1));
-        }
+        ptr::write(&mut (*inner).strong, Cell::new(1));
+        ptr::write(&mut (*inner).weak, Cell::new(1));
 
         Ok(inner)
     }
@@ -834,13 +903,11 @@ impl<T: ?Sized> Rc<T> {
     /// Allocates an `RcBox<T>` with sufficient space for an unsized inner value
     unsafe fn allocate_for_ptr(ptr: *const T) -> *mut RcBox<T> {
         // Allocate for the `RcBox<T>` using the given value.
-        unsafe {
-            Self::allocate_for_layout(
-                Layout::for_value(&*ptr),
-                |layout| Global.allocate(layout),
-                |mem| (ptr as *mut RcBox<T>).set_ptr_value(mem),
-            )
-        }
+        Self::allocate_for_layout(
+            Layout::for_value(&*ptr),
+            |layout| Global.allocate(layout),
+            |mem| (ptr as *mut RcBox<T>).set_ptr_value(mem),
+        )
     }
 
     #[cfg(not(no_global_oom_handling))]
@@ -872,7 +939,7 @@ impl<T> Deref for Rc<T> {
 
     #[inline(always)]
     fn deref(&self) -> &T {
-        &self.inner().value
+        unsafe { mem::transmute(&self.inner().value) }
     }
 }
 
@@ -936,7 +1003,7 @@ impl<T: PartialEq> PartialEq for Rc<T> {
     /// ```
     #[inline]
     fn eq(&self, other: &Rc<T>) -> bool {
-        **self == ***other
+        **self == **other
     }
 
     /// Inequality for two `Rc`s.
@@ -958,7 +1025,7 @@ impl<T: PartialEq> PartialEq for Rc<T> {
     /// ```
     #[inline]
     fn ne(&self, other: &Rc<T>) -> bool {
-        **self != ***other
+        **self != **other
     }
 }
 
@@ -1227,7 +1294,7 @@ struct WeakInner<'a> {
     strong: &'a Cell<usize>,
 }
 
-impl<T: ?Sized> Weak<T> {
+impl<T> Weak<T> {
     /// Returns a raw pointer to the object `T` pointed to by this `Weak<T>`.
     ///
     /// The pointer is valid only if there are some strong references. The pointer may be dangling,
@@ -1264,7 +1331,7 @@ impl<T: ?Sized> Weak<T> {
             // SAFETY: if is_dangling returns false, then the pointer is dereferencable.
             // The payload may be dropped at this point, and we have to maintain provenance,
             // so use raw pointer manipulation.
-            unsafe { ptr::addr_of_mut!((*ptr).value) }
+            unsafe { mem::transmute(ptr::addr_of_mut!((*ptr).value)) }
         }
     }
 
@@ -1352,15 +1419,15 @@ impl<T: ?Sized> Weak<T> {
         } else {
             // Otherwise, we're guaranteed the pointer came from a nondangling Weak.
             // SAFETY: data_offset is safe to call, as ptr references a real (potentially dropped) T.
-            let offset = unsafe { data_offset(ptr) };
+            let offset = data_offset(ptr);
             // Thus, we reverse the offset to get the whole RcBox.
             // SAFETY: the pointer originated from a Weak, so this offset is safe.
-            unsafe { (ptr as *mut RcBox<T>).set_ptr_value((ptr as *mut u8).offset(-offset)) }
+            (ptr as *mut RcBox<T>).set_ptr_value((ptr as *mut u8).offset(-offset))
         };
 
         // SAFETY: we now have recovered the original Weak pointer, so can create the Weak.
         Weak {
-            ptr: unsafe { NonNull::new_unchecked(ptr) },
+            ptr: NonNull::new_unchecked(ptr),
         }
     }
 
@@ -1590,7 +1657,7 @@ impl<T> Default for Weak<T> {
 // clone these much in Rust thanks to ownership and move-semantics.
 
 #[doc(hidden)]
-trait RcInnerPtr {
+pub(crate) trait RcInnerPtr {
     fn weak_ref(&self) -> &Cell<usize>;
     fn strong_ref(&self) -> &Cell<usize>;
 
@@ -1610,12 +1677,18 @@ trait RcInnerPtr {
         if strong == 0 || strong == usize::MAX {
             abort();
         }
+        // `usize::MAX` is used to mark the `Rc` as uninitialized, so disallow
+        // incrementing the strong count to prevent a memory leak and type
+        // confusion in `Drop::drop`.
+        if strong + 1 == usize::MAX {
+            abort();
+        }
         self.strong_ref().set(strong + 1);
     }
 
     #[inline]
     fn dec_strong(&self) {
-        self.strong_ref().set(self.strong() - 1);
+        self.strong_ref().set(self.strong().saturating_sub(1));
     }
 
     #[inline]
@@ -1639,11 +1712,31 @@ trait RcInnerPtr {
 
     #[inline]
     fn dec_weak(&self) {
-        self.weak_ref().set(self.weak() - 1);
+        self.weak_ref().set(self.weak().saturating_sub(1));
+    }
+
+    #[inline]
+    fn kill(&self) {
+        self.strong_ref().set(0);
+    }
+
+    #[inline]
+    fn is_dead(&self) -> bool {
+        self.strong() == 0 || self.is_uninit()
+    }
+
+    #[inline]
+    fn is_uninit(&self) -> bool {
+        self.strong() == usize::MAX
+    }
+
+    #[inline]
+    fn make_uninit(&self) {
+        self.strong_ref().set(usize::MAX);
     }
 }
 
-impl<T: ?Sized> RcInnerPtr for RcBox<T> {
+impl<T> RcInnerPtr for RcBox<T> {
     #[inline(always)]
     fn weak_ref(&self) -> &Cell<usize> {
         &self.weak
@@ -1694,11 +1787,24 @@ unsafe fn data_offset<T: ?Sized>(ptr: *const T) -> isize {
     // and extern types, the input safety requirement is currently enough to
     // satisfy the requirements of align_of_val_raw; this is an implementation
     // detail of the language that may not be relied upon outside of std.
-    unsafe { data_offset_align(align_of_val_raw(ptr)) }
+    data_offset_align(align_of_val_raw(ptr))
 }
 
 #[inline]
 fn data_offset_align(align: usize) -> isize {
     let layout = Layout::new::<RcBox<()>>();
     (layout.size() + layout.padding_needed_for(align)) as isize
+}
+
+#[inline]
+// This signature has to be the same as `Box`, otherwise an ICE will happen.
+// When an additional parameter to `Box` is added (like `A: Allocator`), this has to be added here as
+// well.
+// For example if `Box` is changed to  `struct Box<T: ?Sized, A: Allocator>(Unique<T>, A)`,
+// this function has to be changed to `fn box_free<T: ?Sized, A: Allocator>(Unique<T>, A)` as well.
+pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: Unique<T>, alloc: A) {
+    let size = size_of_val(ptr.as_ref());
+    let align = min_align_of_val(ptr.as_ref());
+    let layout = Layout::from_size_align_unchecked(size, align);
+    alloc.deallocate(ptr.cast().into(), layout)
 }

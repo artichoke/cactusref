@@ -30,7 +30,7 @@ fn weak_upgrade_returns_none_when_cycle_is_deallocated() {
     assert_eq!(Rc::strong_count(&vec), 11);
     let weak = Rc::downgrade(&vec);
     assert!(weak.upgrade().is_some());
-    assert_eq!(weak.weak_count(), Some(1));
+    assert_eq!(weak.weak_count(), 1);
     drop(vec);
     assert!(weak.upgrade().is_none());
 }
