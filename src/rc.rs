@@ -1,15 +1,14 @@
-use alloc::alloc::{alloc, dealloc, Layout};
+use alloc::alloc::{alloc, Layout};
 use core::borrow;
 use core::cell::{Cell, RefCell};
 use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::{PhantomData, Unpin};
-use core::mem::{self, ManuallyDrop};
+use core::mem::{self, MaybeUninit};
 use core::ops::Deref;
 use core::pin::Pin;
 use core::ptr::{self, NonNull};
-use core::slice;
 use std::process::abort;
 
 use crate::link::Links;
@@ -43,7 +42,7 @@ use crate::Weak;
 /// fn requires_sync<T: Sync>(s: T) {}
 /// requires_sync(Rc::new(5));
 /// ```
-pub struct Rc<T: ?Sized> {
+pub struct Rc<T> {
     pub(crate) ptr: NonNull<RcBox<T>>,
     pub(crate) phantom: PhantomData<T>,
 }
@@ -66,8 +65,8 @@ impl<T> Rc<T> {
             // the allocation while the strong destructor is running, even
             // if the weak pointer is stored inside the strong one.
             weak: Cell::new(1),
-            links: ManuallyDrop::new(RefCell::new(Links::default())),
-            value,
+            links: RefCell::new(Links::default()),
+            value: MaybeUninit::new(value),
         });
         let ptr = unsafe { NonNull::new_unchecked(Box::into_raw(ptr)) };
         Self {
@@ -122,7 +121,7 @@ impl<T> Rc<T> {
     }
 }
 
-impl<T: ?Sized> Rc<T> {
+impl<T> Rc<T> {
     /// Consumes the `Rc`, returning the wrapped pointer.
     ///
     /// To avoid a memory leak the pointer must be converted back to an `Rc`
@@ -324,7 +323,7 @@ impl<T: ?Sized> Rc<T> {
     #[inline]
     pub fn get_mut(this: &mut Self) -> Option<&mut T> {
         if Self::is_unique(this) {
-            unsafe { Some(&mut this.ptr.as_mut().value) }
+            unsafe { Some(mem::transmute(&mut this.ptr.as_mut().value)) }
         } else {
             None
         }
@@ -414,7 +413,7 @@ impl<T: Clone> Rc<T> {
         } else if Self::weak_count(this) != 0 {
             // Can just steal the data, all that's left is Weaks
             unsafe {
-                let mut swap = Self::new(ptr::read(&this.ptr.as_ref().value));
+                let mut swap = Self::new(ptr::read(mem::transmute(&this.ptr.as_ref().value)));
                 mem::swap(this, &mut swap);
                 swap.dec_strong();
                 // Remove implicit strong-weak ref (no need to craft a fake
@@ -428,11 +427,11 @@ impl<T: Clone> Rc<T> {
         // reference count is guaranteed to be 1 at this point, and we required
         // the `Rc<T>` itself to be `mut`, so we're returning the only possible
         // reference to the inner value.
-        unsafe { &mut this.ptr.as_mut().value }
+        unsafe { mem::transmute(&mut this.ptr.as_mut().value) }
     }
 }
 
-impl<T: ?Sized> Rc<T> {
+impl<T> Rc<T> {
     // Allocates an `RcBox<T>` with sufficient space for an unsized value
     unsafe fn allocate_for_ptr(ptr: *const T) -> *mut RcBox<T> {
         // Calculate layout using the given value.
@@ -453,10 +452,7 @@ impl<T: ?Sized> Rc<T> {
 
         ptr::write(&mut (*inner).strong, Cell::new(1));
         ptr::write(&mut (*inner).weak, Cell::new(1));
-        ptr::write(
-            &mut (*inner).links,
-            ManuallyDrop::new(RefCell::new(Links::default())),
-        );
+        ptr::write(&mut (*inner).links, RefCell::new(Links::default()));
 
         inner
     }
@@ -487,92 +483,7 @@ impl<T: ?Sized> Rc<T> {
     }
 }
 
-impl<T> Rc<[T]> {
-    // Copy elements from slice into newly allocated Rc<[T]>
-    //
-    // Unsafe because the caller must either take ownership or bind `T: Copy`
-    unsafe fn copy_from_slice(v: &[T]) -> Self {
-        let v_ptr = v as *const [T];
-        let ptr = Self::allocate_for_ptr(v_ptr);
-
-        ptr::copy_nonoverlapping(v.as_ptr(), &mut (*ptr).value as *mut [T] as *mut T, v.len());
-
-        Self {
-            ptr: NonNull::new_unchecked(ptr),
-            phantom: PhantomData,
-        }
-    }
-}
-
-trait RcFromSlice<T> {
-    fn from_slice(slice: &[T]) -> Self;
-}
-
-impl<T: Clone> RcFromSlice<T> for Rc<[T]> {
-    #[inline]
-    default fn from_slice(v: &[T]) -> Self {
-        // Panic guard while cloning T elements.
-        // In the event of a panic, elements that have been written
-        // into the new RcBox will be dropped, then the memory freed.
-        struct Guard<T> {
-            mem: NonNull<u8>,
-            elems: *mut T,
-            layout: Layout,
-            n_elems: usize,
-        }
-
-        impl<T> Drop for Guard<T> {
-            fn drop(&mut self) {
-                unsafe {
-                    let slice = slice::from_raw_parts_mut(self.elems, self.n_elems);
-                    ptr::drop_in_place(slice);
-
-                    dealloc(self.mem.as_mut(), self.layout);
-                }
-            }
-        }
-
-        unsafe {
-            let v_ptr = v as *const [T];
-            let ptr = Self::allocate_for_ptr(v_ptr);
-
-            let mem = ptr as *mut _ as *mut u8;
-            let layout = Layout::for_value(&*ptr);
-
-            // Pointer to first element
-            let elems = &mut (*ptr).value as *mut [T] as *mut T;
-
-            let mut guard = Guard {
-                mem: NonNull::new_unchecked(mem),
-                elems,
-                layout,
-                n_elems: 0,
-            };
-
-            for (i, item) in v.iter().enumerate() {
-                ptr::write(elems.add(i), item.clone());
-                guard.n_elems += 1;
-            }
-
-            // All clear. Forget the guard so it doesn't free the new RcBox.
-            mem::forget(guard);
-
-            Self {
-                ptr: NonNull::new_unchecked(ptr),
-                phantom: PhantomData,
-            }
-        }
-    }
-}
-
-impl<T: Copy> RcFromSlice<T> for Rc<[T]> {
-    #[inline]
-    fn from_slice(v: &[T]) -> Self {
-        unsafe { Self::copy_from_slice(v) }
-    }
-}
-
-impl<T: ?Sized> Deref for Rc<T> {
+impl<T> Deref for Rc<T> {
     type Target = T;
 
     #[inline]
@@ -586,11 +497,11 @@ impl<T: ?Sized> Deref for Rc<T> {
         if self.inner().is_dead() {
             abort();
         }
-        &self.inner().value
+        unsafe { mem::transmute(&self.inner().value) }
     }
 }
 
-impl<T: ?Sized> Clone for Rc<T> {
+impl<T> Clone for Rc<T> {
     /// Makes a clone of the `Rc` pointer.
     ///
     /// This creates another pointer to the same inner value, increasing the
@@ -641,12 +552,12 @@ impl<T: Default> Default for Rc<T> {
     }
 }
 
-trait RcEqIdent<T: ?Sized + PartialEq> {
+trait RcEqIdent<T: PartialEq> {
     fn eq(&self, other: &Self) -> bool;
     fn ne(&self, other: &Self) -> bool;
 }
 
-impl<T: ?Sized + PartialEq> RcEqIdent<T> for Rc<T> {
+impl<T: PartialEq> RcEqIdent<T> for Rc<T> {
     #[inline]
     default fn eq(&self, other: &Self) -> bool {
         **self == **other
@@ -664,7 +575,7 @@ impl<T: ?Sized + PartialEq> RcEqIdent<T> for Rc<T> {
 /// clone, but also heavy to check for equality, causing this cost to pay off
 /// more easily. It's also more likely to have two `Rc` clones, that point to
 /// the same value, than two `&T`s.
-impl<T: ?Sized + Eq> RcEqIdent<T> for Rc<T> {
+impl<T: Eq> RcEqIdent<T> for Rc<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         Self::ptr_eq(self, other) || **self == **other
@@ -676,7 +587,7 @@ impl<T: ?Sized + Eq> RcEqIdent<T> for Rc<T> {
     }
 }
 
-impl<T: ?Sized + PartialEq> PartialEq for Rc<T> {
+impl<T: PartialEq> PartialEq for Rc<T> {
     /// Equality for two `Rc`s.
     ///
     /// Two `Rc`s are equal if their inner values are equal.
@@ -721,9 +632,9 @@ impl<T: ?Sized + PartialEq> PartialEq for Rc<T> {
     }
 }
 
-impl<T: ?Sized + Eq> Eq for Rc<T> {}
+impl<T: Eq> Eq for Rc<T> {}
 
-impl<T: ?Sized + PartialOrd> PartialOrd for Rc<T> {
+impl<T: PartialOrd> PartialOrd for Rc<T> {
     /// Partial comparison for two `Rc`s.
     ///
     /// The two are compared by calling `partial_cmp()` on their inner values.
@@ -816,7 +727,7 @@ impl<T: ?Sized + PartialOrd> PartialOrd for Rc<T> {
     }
 }
 
-impl<T: ?Sized + Ord> Ord for Rc<T> {
+impl<T: Ord> Ord for Rc<T> {
     /// Comparison for two `Rc`s.
     ///
     /// The two are compared by calling `cmp()` on their inner values.
@@ -837,25 +748,25 @@ impl<T: ?Sized + Ord> Ord for Rc<T> {
     }
 }
 
-impl<T: ?Sized + Hash> Hash for Rc<T> {
+impl<T: Hash> Hash for Rc<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         (**self).hash(state);
     }
 }
 
-impl<T: ?Sized + fmt::Display> fmt::Display for Rc<T> {
+impl<T: fmt::Display> fmt::Display for Rc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&**self, f)
     }
 }
 
-impl<T: ?Sized + fmt::Debug> fmt::Debug for Rc<T> {
+impl<T: fmt::Debug> fmt::Debug for Rc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&**self, f)
     }
 }
 
-impl<T: ?Sized> fmt::Pointer for Rc<T> {
+impl<T> fmt::Pointer for Rc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Pointer::fmt(&(&**self as *const T), f)
     }
@@ -867,60 +778,23 @@ impl<T> From<T> for Rc<T> {
     }
 }
 
-impl<T: Clone> From<&[T]> for Rc<[T]> {
-    #[inline]
-    fn from(v: &[T]) -> Self {
-        <Self as RcFromSlice<T>>::from_slice(v)
-    }
-}
-
-#[allow(clippy::use_self)]
-impl From<&str> for Rc<str> {
-    #[inline]
-    fn from(v: &str) -> Self {
-        let rc = Rc::<[u8]>::from(v.as_bytes());
-        unsafe { Self::from_raw(Rc::into_raw(rc) as *const str) }
-    }
-}
-
-impl From<String> for Rc<str> {
-    #[inline]
-    fn from(v: String) -> Self {
-        Self::from(&v[..])
-    }
-}
-
-impl<T: ?Sized> From<Box<T>> for Rc<T> {
+impl<T> From<Box<T>> for Rc<T> {
     #[inline]
     fn from(v: Box<T>) -> Self {
         Self::from_box(v)
     }
 }
 
-impl<T> From<Vec<T>> for Rc<[T]> {
-    #[inline]
-    fn from(mut v: Vec<T>) -> Self {
-        unsafe {
-            let rc = Self::copy_from_slice(&v);
-
-            // Allow the Vec to free its memory, but not destroy its contents
-            v.set_len(0);
-
-            rc
-        }
-    }
-}
-
-impl<T: ?Sized> borrow::Borrow<T> for Rc<T> {
+impl<T> borrow::Borrow<T> for Rc<T> {
     fn borrow(&self) -> &T {
         &**self
     }
 }
 
-impl<T: ?Sized> AsRef<T> for Rc<T> {
+impl<T> AsRef<T> for Rc<T> {
     fn as_ref(&self) -> &T {
         &**self
     }
 }
 
-impl<T: ?Sized> Unpin for Rc<T> {}
+impl<T> Unpin for Rc<T> {}

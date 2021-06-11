@@ -40,7 +40,7 @@ use crate::Rc;
 /// let item = Rc::new(5);
 /// requires_sync(Rc::downgrade(&item));
 /// ```
-pub struct Weak<T: ?Sized> {
+pub struct Weak<T> {
     // This is a `NonNull` to allow optimizing the size of this type in enums,
     // but it is not necessarily a valid pointer.
     // `Weak::new` sets this to `usize::MAX` so that it doesn’t need
@@ -193,7 +193,7 @@ impl<T> Weak<T> {
     }
 }
 
-impl<T: ?Sized> Weak<T> {
+impl<T> Weak<T> {
     /// Attempts to upgrade the `Weak` pointer to an [`Rc`], extending
     /// the lifetime of the value if successful.
     ///
@@ -311,7 +311,7 @@ impl<T: ?Sized> Weak<T> {
     }
 }
 
-impl<T: ?Sized> Drop for Weak<T> {
+impl<T> Drop for Weak<T> {
     /// Drops the `Weak` pointer.
     ///
     /// # Examples
@@ -353,7 +353,7 @@ impl<T: ?Sized> Drop for Weak<T> {
     }
 }
 
-impl<T: ?Sized> Clone for Weak<T> {
+impl<T> Clone for Weak<T> {
     /// Makes a clone of the `Weak` pointer that points to the same value.
     ///
     /// # Examples
@@ -374,7 +374,7 @@ impl<T: ?Sized> Clone for Weak<T> {
     }
 }
 
-impl<T: ?Sized + fmt::Debug> fmt::Debug for Weak<T> {
+impl<T: fmt::Debug> fmt::Debug for Weak<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(Weak)")
     }

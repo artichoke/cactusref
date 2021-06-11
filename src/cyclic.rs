@@ -4,7 +4,7 @@ use crate::link::{Kind, Link};
 use crate::ptr::RcBoxPtr;
 use crate::Rc;
 
-impl<T: ?Sized> Rc<T> {
+impl<T> Rc<T> {
     pub(crate) fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>> {
         let cycle = cycle_refs(Link::forward(this.ptr));
         if cycle.is_empty() {
@@ -23,7 +23,7 @@ impl<T: ?Sized> Rc<T> {
 
 // Perform a breadth first search over all of the forward and backward links to
 // determine the clique of nodes in a cycle and their strong counts.
-fn cycle_refs<T: ?Sized>(this: Link<T>) -> HashMap<Link<T>, usize> {
+fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
     // These collections track compute the layout of the object graph in linear
     // time in the size of the graph.
     let mut cycle_owned_refs = HashMap::default();
@@ -56,7 +56,7 @@ fn cycle_refs<T: ?Sized>(this: Link<T>) -> HashMap<Link<T>, usize> {
 
 #[inline]
 #[cfg(debug_assertions)]
-fn debug_cycle<T: ?Sized>(cycle: &HashMap<Link<T>, usize>) {
+fn debug_cycle<T>(cycle: &HashMap<Link<T>, usize>) {
     let counts = cycle
         .iter()
         .map(|(item, cycle_count)| (item.strong(), cycle_count))

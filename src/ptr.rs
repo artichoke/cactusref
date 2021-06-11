@@ -1,6 +1,6 @@
 use alloc::alloc::{dealloc, Layout};
 use core::cell::{Cell, RefCell};
-use core::mem::{self, ManuallyDrop};
+use core::mem::{self, MaybeUninit};
 use core::ptr::{self, NonNull};
 use std::process::abort;
 
@@ -8,7 +8,7 @@ use crate::link::Links;
 use crate::Rc;
 
 #[allow(clippy::module_name_repetitions)]
-pub trait RcBoxPtr<T: ?Sized> {
+pub trait RcBoxPtr<T> {
     fn inner(&self) -> &RcBox<T>;
 
     #[inline]
@@ -22,7 +22,7 @@ pub trait RcBoxPtr<T: ?Sized> {
         // nevertheless, we insert an abort here to hint LLVM at
         // an otherwise missed optimization.
         let strong_count = self.strong();
-        if strong_count == 0 || strong_count == usize::MAX {
+        if strong_count == 0 || strong_count == usize::MAX || strong_count + 1 == usize::MAX {
             abort();
         }
         // guaranteed not to overflow by the abort above.
@@ -46,7 +46,7 @@ pub trait RcBoxPtr<T: ?Sized> {
         // nevertheless, we insert an abort here to hint LLVM at
         // an otherwise missed optimization.
         let weak_count = self.weak();
-        if weak_count == 0 || weak_count == usize::MAX {
+        if weak_count == 0 || weak_count == usize::MAX || weak_count + 1 == usize::MAX {
             abort();
         }
         // guaranteed not to overflow by the abort above.
@@ -65,38 +65,40 @@ pub trait RcBoxPtr<T: ?Sized> {
 
     #[inline]
     fn is_dead(&self) -> bool {
-        self.strong() == 0
+        self.strong() == 0 || self.strong() == usize::MAX
+    }
+
+    #[inline]
+    fn is_initialized(&self) -> bool {
+        self.strong() == usize::MAX
+    }
+
+    #[inline]
+    fn make_uninit(&self) {
+        self.inner().strong.set(usize::MAX);
     }
 }
 
-impl<T: ?Sized> RcBoxPtr<T> for Rc<T> {
+impl<T> RcBoxPtr<T> for Rc<T> {
     fn inner(&self) -> &RcBox<T> {
         unsafe { self.ptr.as_ref() }
     }
 }
 
-impl<T: ?Sized> RcBoxPtr<T> for RcBox<T> {
+impl<T> RcBoxPtr<T> for RcBox<T> {
     fn inner(&self) -> &Self {
         self
     }
 }
 
-pub struct RcBox<T: ?Sized> {
+pub struct RcBox<T> {
     pub strong: Cell<usize>,
     pub weak: Cell<usize>,
-    pub links: ManuallyDrop<RefCell<Links<T>>>,
-    pub value: T,
+    pub links: RefCell<Links<T>>,
+    pub value: MaybeUninit<T>,
 }
 
-impl<T: ?Sized> Drop for RcBox<T> {
-    fn drop(&mut self) {
-        unsafe {
-            ManuallyDrop::drop(&mut self.links);
-        }
-    }
-}
-
-pub fn is_dangling<T: ?Sized>(ptr: NonNull<T>) -> bool {
+pub fn is_dangling<T>(ptr: NonNull<T>) -> bool {
     let address = ptr.as_ptr() as *mut () as usize;
     address == usize::max_value()
 }
@@ -104,7 +106,7 @@ pub fn is_dangling<T: ?Sized>(ptr: NonNull<T>) -> bool {
 // duplicated from a crate-private function in std
 // <https://github.com/rust-lang/rust/blob/baab1914/src/liballoc/alloc.rs#L212-L223>
 #[inline]
-pub unsafe fn box_free<T: ?Sized>(ptr: NonNull<T>) {
+pub unsafe fn box_free<T>(ptr: NonNull<T>) {
     let ptr = ptr.as_ptr();
     let size = mem::size_of_val(&*ptr);
     let align = mem::align_of_val(&*ptr);

@@ -11,11 +11,11 @@ pub enum Kind {
     Backward,
 }
 
-pub struct Links<T: ?Sized> {
+pub struct Links<T> {
     registry: HashMap<Link<T>, usize>,
 }
 
-impl<T: ?Sized> fmt::Debug for Links<T> {
+impl<T> fmt::Debug for Links<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Links")
             .field("registry", &self.registry)
@@ -23,7 +23,7 @@ impl<T: ?Sized> fmt::Debug for Links<T> {
     }
 }
 
-impl<T: ?Sized> Links<T> {
+impl<T> Links<T> {
     #[inline]
     pub fn insert(&mut self, other: Link<T>) {
         *self.registry.entry(other).or_insert(0) += 1;
@@ -61,7 +61,7 @@ impl<T: ?Sized> Links<T> {
     }
 }
 
-impl<T: ?Sized> Clone for Links<T> {
+impl<T> Clone for Links<T> {
     fn clone(&self) -> Self {
         Self {
             registry: self.registry.clone(),
@@ -69,7 +69,7 @@ impl<T: ?Sized> Clone for Links<T> {
     }
 }
 
-impl<T: ?Sized> Default for Links<T> {
+impl<T> Default for Links<T> {
     fn default() -> Self {
         Self {
             registry: HashMap::default(),
@@ -77,12 +77,12 @@ impl<T: ?Sized> Default for Links<T> {
     }
 }
 
-pub struct Link<T: ?Sized> {
+pub struct Link<T> {
     ptr: NonNull<RcBox<T>>,
     kind: Kind,
 }
 
-impl<T: ?Sized> fmt::Debug for Link<T> {
+impl<T> fmt::Debug for Link<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Link")
             .field("ptr", &self.ptr)
@@ -91,7 +91,7 @@ impl<T: ?Sized> fmt::Debug for Link<T> {
     }
 }
 
-impl<T: ?Sized> Link<T> {
+impl<T> Link<T> {
     #[inline]
     pub fn forward(ptr: NonNull<RcBox<T>>) -> Self {
         Self {
@@ -129,15 +129,15 @@ impl<T: ?Sized> Link<T> {
     }
 }
 
-impl<T: ?Sized> RcBoxPtr<T> for Link<T> {
+impl<T> RcBoxPtr<T> for Link<T> {
     fn inner(&self) -> &RcBox<T> {
         unsafe { self.ptr.as_ref() }
     }
 }
 
-impl<T: ?Sized> Copy for Link<T> {}
+impl<T> Copy for Link<T> {}
 
-impl<T: ?Sized> Clone for Link<T> {
+impl<T> Clone for Link<T> {
     fn clone(&self) -> Self {
         Self {
             ptr: self.ptr,
@@ -146,15 +146,15 @@ impl<T: ?Sized> Clone for Link<T> {
     }
 }
 
-impl<T: ?Sized> PartialEq for Link<T> {
+impl<T> PartialEq for Link<T> {
     fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind && ptr::eq(self.as_ptr(), other.as_ptr())
     }
 }
 
-impl<T: ?Sized> Eq for Link<T> {}
+impl<T> Eq for Link<T> {}
 
-impl<T: ?Sized> Hash for Link<T> {
+impl<T> Hash for Link<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.ptr.hash(state);
         self.kind.hash(state);
