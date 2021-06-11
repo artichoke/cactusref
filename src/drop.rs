@@ -369,35 +369,35 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
     // deallocated.
     links.borrow_mut().clear();
 
-    let rcbox = this.ptr.as_mut();
+    let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
-    if !rcbox.is_uninit() {
+    if !(*rcbox).is_uninit() {
         trace!(
             "cactusref deallocating RcBox after dropping adopted and unreachable item {:p} in the object graph",
             rcbox
         );
         // Mark the `RcBox` as uninitialized so we can make its `MaybeUninit`
         // fields uninhabited.
-        rcbox.make_uninit();
+        (*rcbox).make_uninit();
 
         // Move `T` out of the `RcBox`. Dropping an uninitialized `MaybeUninit`
         // has no effect.
-        let inner = mem::replace(&mut rcbox.value, MaybeUninit::uninit());
+        let inner = mem::replace(&mut (*rcbox).value, MaybeUninit::uninit());
         // destroy the contained `T`.
         drop(inner.assume_init());
         // Move the links `HashMap` out of the `RcBox`. Dropping an uninitialized
         // `MaybeUninit` has no effect.
-        let links = mem::replace(&mut rcbox.links, MaybeUninit::uninit());
+        let links = mem::replace(&mut (*rcbox).links, MaybeUninit::uninit());
         // Destroy the heap-allocated links.
         drop(links.assume_init());
     }
 
     // remove the implicit "strong weak" pointer now that we've destroyed the
     // contents.
-    rcbox.dec_weak();
+    (*rcbox).dec_weak();
 
-    if rcbox.weak() == 0 {
+    if (*rcbox).weak() == 0 {
         trace!(
             "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
             this.ptr
