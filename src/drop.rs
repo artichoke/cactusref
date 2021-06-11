@@ -308,3 +308,48 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
         );
     }
 }
+
+unsafe impl<#[may_dangle] T: ?Sized> Drop for Rc<T> {
+    /// Drops the `Rc`.
+    ///
+    /// This will decrement the strong reference count. If the strong reference
+    /// count reaches zero then the only other references (if any) are
+    /// [`Weak`], so we `drop` the inner value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::rc::Rc;
+    ///
+    /// struct Foo;
+    ///
+    /// impl Drop for Foo {
+    ///     fn drop(&mut self) {
+    ///         println!("dropped!");
+    ///     }
+    /// }
+    ///
+    /// let foo  = Rc::new(Foo);
+    /// let foo2 = Rc::clone(&foo);
+    ///
+    /// drop(foo);    // Doesn't print anything
+    /// drop(foo2);   // Prints "dropped!"
+    /// ```
+    fn drop(&mut self) {
+        unsafe {
+            self.inner().dec_strong();
+            if self.inner().strong() == 0 {
+                // destroy the contained object
+                ptr::drop_in_place(Self::get_mut_unchecked(self));
+
+                // remove the implicit "strong weak" pointer now that we've
+                // destroyed the contents.
+                self.inner().dec_weak();
+
+                if self.inner().weak() == 0 {
+                    Global.deallocate(self.ptr.cast(), Layout::for_value(self.ptr.as_ref()));
+                }
+            }
+        }
+    }
+}
