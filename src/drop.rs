@@ -139,7 +139,7 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
                 return;
             }
             if let Some(cycle) = Self::orphaned_cycle(self) {
-                drop_cycle(self, cycle);
+                drop_cycle(cycle);
                 return;
             }
             debug!("cactusref drop skipped, Rc is reachable");
@@ -189,14 +189,11 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     (*rcbox).dec_weak();
 
     if (*rcbox).weak() == 0 {
-        dealloc(
-            this.ptr.cast().as_mut(),
-            Layout::for_value(this.ptr.as_ref()),
-        );
+        dealloc(rcbox.cast(), Layout::for_value_raw(rcbox));
     }
 }
 
-unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
+unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
     debug!(
         "cactusref detected orphaned cycle with {} objects",
         cycle.len()
@@ -307,7 +304,7 @@ unsafe fn drop_cycle<T>(this: &mut Rc<T>, cycle: HashMap<Link<T>, usize>) {
                 "no more weak references, deallocating layout for item {:?} in orphaned cycle",
                 ptr
             );
-            dealloc(ptr.as_ptr().cast(), Layout::for_value(this.ptr.as_ref()));
+            dealloc(rcbox.cast(), Layout::for_value_raw(rcbox));
         }
     }
 }
@@ -402,9 +399,6 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
             "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
             this.ptr
         );
-        dealloc(
-            this.ptr.cast().as_mut(),
-            Layout::for_value(this.ptr.as_ref()),
-        );
+        dealloc(rcbox.cast(), Layout::for_value_raw(rcbox));
     }
 }
