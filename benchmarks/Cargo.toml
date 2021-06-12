@@ -18,5 +18,5 @@ harness = false
 criterion = { version = "0.3", default-features = false, features = ["cargo_bench_support", "html_reports"] }
 # benchmark target
 cactusref = { path = ".." }
-env_logger = "0.6.1"
+env_logger = { version = "0.8.4", default-features = false }
 log = "0.4.6"
