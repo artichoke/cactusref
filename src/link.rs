@@ -120,7 +120,7 @@ impl<T> Link<T> {
     }
 
     #[inline]
-    pub fn as_ptr(&self) -> *const RcBox<T> {
+    pub fn as_ptr(&self) -> *mut RcBox<T> {
         self.ptr.as_ptr()
     }
 
