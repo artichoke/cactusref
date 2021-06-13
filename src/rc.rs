@@ -338,7 +338,7 @@ impl<T> Rc<T> {
             Box::leak(Box::new(RcBox {
                 strong: Cell::new(1),
                 weak: Cell::new(1),
-                links: MaybeUninit::new(RefCell::new(Links::default())),
+                links: MaybeUninit::new(RefCell::new(Links::new())),
                 value: MaybeUninit::new(value),
             }))
             .into(),
@@ -368,13 +368,11 @@ impl<T> Rc<T> {
     /// ```
     pub fn new_uninit() -> Rc<mem::MaybeUninit<T>> {
         unsafe {
-            let mut rc = Rc::from_ptr(Rc::allocate_for_layout(
+            Rc::from_ptr(Rc::allocate_for_layout(
                 Layout::new::<T>(),
                 |layout| Global.allocate(layout),
                 |mem| mem as *mut RcBox<mem::MaybeUninit<T>>,
-            ));
-            rc.ptr.as_mut().links = MaybeUninit::new(RefCell::new(Links::default()));
-            rc
+            ))
         }
     }
 
@@ -913,7 +911,7 @@ impl<T> Rc<T> {
         ptr::write(&mut (*inner).weak, Cell::new(1));
         ptr::write(
             &mut (*inner).links,
-            MaybeUninit::new(RefCell::new(Links::default())),
+            MaybeUninit::new(RefCell::new(Links::new())),
         );
 
         Ok(inner)

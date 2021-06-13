@@ -38,7 +38,7 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
         visited.insert(node);
         let links = unsafe { node.as_ref().links().borrow() };
         for (link, strong) in links.iter() {
-            if let Kind::Forward = link.link_kind() {
+            if let Kind::Forward = link.kind() {
                 cycle_owned_refs
                     .entry(*link)
                     .and_modify(|count| *count += strong)
