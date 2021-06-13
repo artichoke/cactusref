@@ -299,6 +299,26 @@ pub struct Rc<T> {
     phantom: PhantomData<RcBox<T>>,
 }
 
+/// `Rc` is not `Send`.
+///
+/// ```compile_fail
+/// use cactusref::Rc;
+/// fn requires_send<T: Send>(val: T) {}
+/// let rc = Rc::<usize>::new(1);
+/// requires_send(rc);
+/// ```
+mod rc_is_not_send {}
+
+/// `Rc` is not `Sync`.
+///
+/// ```compile_fail
+/// use cactusref::Rc;
+/// fn requires_sync<T: Sync>(val: T) {}
+/// let rc = Rc::<usize>::new(1);
+/// requires_sync(rc);
+/// ```
+mod rc_is_not_sync {}
+
 impl<T> Rc<T> {
     #[inline(always)]
     pub(crate) fn inner(&self) -> &RcBox<T> {
@@ -413,7 +433,10 @@ impl<T> Rc<T> {
                 // pointer while also handling drop logic by just crafting a
                 // fake Weak.
                 this.inner().dec_strong();
-                let _weak = Weak { ptr: this.ptr };
+                let _weak = Weak {
+                    ptr: this.ptr,
+                    phantom: PhantomData,
+                };
                 mem::forget(this);
                 Ok(val)
             }
@@ -576,7 +599,10 @@ impl<T> Rc<T> {
         this.inner().inc_weak();
         // Make sure we do not create a dangling Weak
         debug_assert!(!is_dangling(this.ptr.as_ptr()));
-        Weak { ptr: this.ptr }
+        Weak {
+            ptr: this.ptr,
+            phantom: PhantomData,
+        }
     }
 
     /// Gets the number of [`Weak`] pointers to this allocation.
@@ -1290,7 +1316,28 @@ pub struct Weak<T> {
     // will ever have because RcBox has alignment at least 2.
     // This is only possible when `T: Sized`; unsized `T` never dangle.
     ptr: NonNull<RcBox<T>>,
+    phantom: PhantomData<RcBox<T>>,
 }
+
+/// `Weak` is not `Send`.
+///
+/// ```compile_fail
+/// use cactusref::Weak;
+/// fn requires_send<T: Send>(val: T) {}
+/// let weak = Weak::<usize>::new();
+/// requires_send(weak);
+/// ```
+mod weak_is_not_send {}
+
+/// `Weak` is not `Sync`.
+///
+/// ```compile_fail
+/// use cactusref::Weak;
+/// fn requires_sync<T: Sync>(val: T) {}
+/// let weak = Weak::<usize>::new();
+/// requires_sync(weak);
+/// ```
+mod weak_is_not_sync {}
 
 impl<T> Weak<T> {
     /// Constructs a new `Weak<T>`, without allocating any memory.
@@ -1310,6 +1357,7 @@ impl<T> Weak<T> {
     pub fn new() -> Weak<T> {
         Weak {
             ptr: NonNull::new(usize::MAX as *mut RcBox<T>).expect("MAX is not 0"),
+            phantom: PhantomData,
         }
     }
 }
@@ -1465,6 +1513,7 @@ impl<T> Weak<T> {
         // SAFETY: we now have recovered the original Weak pointer, so can create the Weak.
         Weak {
             ptr: NonNull::new_unchecked(ptr),
+            phantom: PhantomData,
         }
     }
 
@@ -1663,7 +1712,10 @@ impl<T> Clone for Weak<T> {
         if let Some(inner) = self.inner() {
             inner.inc_weak();
         }
-        Weak { ptr: self.ptr }
+        Weak {
+            ptr: self.ptr,
+            phantom: PhantomData,
+        }
     }
 }
 
