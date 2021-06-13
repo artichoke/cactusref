@@ -1,0 +1,33 @@
+---
+name: Miri
+"on":
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+  schedule:
+    - cron: "0 0 * * WED"
+jobs:
+  miri:
+    name: Test with Miri
+    runs-on: ubuntu-latest
+    env:
+      RUST_BACKTRACE: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: miri, rust-src
+
+      - name: Miri setup
+        run: cargo miri setup
+
+      - name: Test unsafe code with Miri
+        run: cargo miri test
