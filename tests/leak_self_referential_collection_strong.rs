@@ -22,10 +22,11 @@ fn leak_self_referential_collection_strong() {
         alloc: s,
     }));
     for _ in 1..10 {
-        vec.borrow_mut().inner.push(Rc::clone(&vec));
+        let clone = Rc::clone(&vec);
         unsafe {
-            Rc::adopt(&vec, &vec);
+            Rc::adopt(&vec, &clone);
         }
+        vec.borrow_mut().inner.push(clone);
     }
     let borrow = vec.borrow();
     let mut iter = borrow.inner.iter();

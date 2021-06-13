@@ -156,10 +156,17 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     // `Rc::orphaned_cycle`.
     let links = this.inner().links();
     for (item, &strong) in links.borrow().iter() {
-        if let Kind::Backward = item.kind() {
-            let mut links = links.borrow_mut();
-            links.remove(forward, strong);
-            links.remove(backward, strong);
+        match item.kind() {
+            Kind::Forward => {
+                let mut links = links.borrow_mut();
+                links.remove(forward, strong);
+                links.remove(backward, strong);
+            }
+            Kind::Loopback => {
+                let mut links = links.borrow_mut();
+                links.remove(*item, strong);
+            }
+            Kind::Backward => {}
         }
     }
 
@@ -221,13 +228,19 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
             let mut links = (*rcbox).links().borrow_mut();
             links
                 .drain_filter(|link, _| {
-                    if let Kind::Forward = link.kind() {
+                    if let Kind::Forward | Kind::Loopback = link.kind() {
                         cycle.contains_key(link)
                     } else {
                         false
                     }
                 })
-                .map(|(_, count)| count)
+                .map(|(link, count)| {
+                    if let Kind::Forward = link.kind() {
+                        count
+                    } else {
+                        0
+                    }
+                })
                 .sum::<usize>()
         };
 

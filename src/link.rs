@@ -12,6 +12,7 @@ use crate::rc::{RcBox, RcInnerPtr};
 pub enum Kind {
     Forward,
     Backward,
+    Loopback,
 }
 
 /// A collection of forward and backward links and their corresponding adoptions.
@@ -115,6 +116,13 @@ impl<T> Link<T> {
         Self {
             ptr,
             kind: Kind::Backward,
+        }
+    }
+
+    pub const fn loopback(ptr: NonNull<RcBox<T>>) -> Self {
+        Self {
+            ptr,
+            kind: Kind::Loopback,
         }
     }
 

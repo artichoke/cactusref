@@ -53,7 +53,7 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
 
         let links = unsafe { node.as_ref().links().borrow() };
         for (&link, &strong) in links.iter() {
-            if let Kind::Forward = link.kind() {
+            if let Kind::Forward | Kind::Loopback = link.kind() {
                 cycle_owned_refs
                     .entry(link)
                     .and_modify(|count| *count += strong)

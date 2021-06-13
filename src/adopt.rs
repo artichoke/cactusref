@@ -1,3 +1,5 @@
+use core::ptr;
+
 use crate::link::Link;
 use crate::Rc;
 
@@ -119,10 +121,10 @@ unsafe impl<T> Adopt for Rc<T> {
     /// let array = Rc::new(RefCell::new(Array::default()));
     /// for _ in 0..10 {
     ///     let item = Rc::clone(&array);
-    ///     array.borrow_mut().buffer.push(item);
     ///     unsafe {
-    ///         Rc::adopt(&array, &array);
+    ///         Rc::adopt(&array, &item);
     ///     }
+    ///     array.borrow_mut().buffer.push(item);
     /// }
     /// let weak = Rc::downgrade(&array);
     /// // 1 for the array binding, 10 for the `Rc`s in buffer
@@ -134,6 +136,14 @@ unsafe impl<T> Adopt for Rc<T> {
     ///
     /// [`unadopt`]: Rc::unadopt
     unsafe fn adopt(this: &Self, other: &Self) {
+        // Self-adoptions have no effect.
+        if ptr::eq(this, other) {
+            // Store a forward reference to `other` in `this`. This bookkeeping logs
+            // a strong reference and is used for discovering cycles.
+            let mut links = this.inner().links().borrow_mut();
+            links.insert(Link::loopback(other.ptr));
+            return;
+        }
         // Store a forward reference to `other` in `this`. This bookkeeping logs
         // a strong reference and is used for discovering cycles.
         let mut links = this.inner().links().borrow_mut();
@@ -185,10 +195,10 @@ unsafe impl<T> Adopt for Rc<T> {
     /// let array = Rc::new(RefCell::new(Array::default()));
     /// for _ in 0..10 {
     ///     let item = Rc::clone(&array);
-    ///     array.borrow_mut().buffer.push(item);
     ///     unsafe {
-    ///         Rc::adopt(&array, &array);
+    ///         Rc::adopt(&array, &item);
     ///     }
+    ///     array.borrow_mut().buffer.push(item);
     /// }
     /// let weak = Rc::downgrade(&array);
     /// // 1 for the array binding, 10 for the `Rc`s in buffer

@@ -22,10 +22,11 @@ fn weak_upgrade_returns_none_when_cycle_is_deallocated() {
         alloc: s,
     }));
     for _ in 0..10 {
-        vec.borrow_mut().inner.push(Rc::clone(&vec));
+        let clone = Rc::clone(&vec);
         unsafe {
-            Rc::adopt(&vec, &vec);
+            Rc::adopt(&vec, &clone);
         }
+        vec.borrow_mut().inner.push(clone);
     }
     assert_eq!(Rc::strong_count(&vec), 11);
     let weak = Rc::downgrade(&vec);
