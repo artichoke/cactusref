@@ -248,7 +248,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::intrinsics::{abort, min_align_of_val};
 use core::marker::{PhantomData, Unpin};
-use core::mem::{self, align_of_val_raw, forget, size_of_val, ManuallyDrop, MaybeUninit};
+use core::mem::{self, ManuallyDrop, MaybeUninit};
 use core::ops::Deref;
 use core::pin::Pin;
 use core::ptr::{self, NonNull, Unique};
@@ -367,12 +367,12 @@ impl<T> Rc<T> {
     /// assert_eq!(*five, 5)
     /// ```
     #[must_use]
-    pub fn new_uninit() -> Rc<mem::MaybeUninit<T>> {
+    pub fn new_uninit() -> Rc<MaybeUninit<T>> {
         unsafe {
             Rc::from_ptr(Rc::allocate_for_layout(
                 Layout::new::<T>(),
                 |layout| Global.allocate(layout),
-                |mem| mem as *mut RcBox<mem::MaybeUninit<T>>,
+                |mem| mem as *mut RcBox<MaybeUninit<T>>,
             ))
         }
     }
@@ -414,7 +414,7 @@ impl<T> Rc<T> {
                 // fake Weak.
                 this.inner().dec_strong();
                 let _weak = Weak { ptr: this.ptr };
-                forget(this);
+                mem::forget(this);
                 Ok(val)
             }
         } else {
@@ -645,9 +645,9 @@ impl<T> Rc<T> {
     #[inline]
     pub unsafe fn increment_strong_count(ptr: *const T) {
         // Retain Rc, but don't touch refcount by wrapping in ManuallyDrop
-        let rc = mem::ManuallyDrop::new(Rc::<T>::from_raw(ptr));
+        let rc = ManuallyDrop::new(Rc::<T>::from_raw(ptr));
         // Now increase refcount, but don't drop new refcount either
-        let _rc_clone: mem::ManuallyDrop<_> = rc.clone();
+        let _rc_clone: ManuallyDrop<_> = rc.clone();
     }
 
     /// Decrements the strong reference count on the `Rc<T>` associated with the
@@ -680,7 +680,7 @@ impl<T> Rc<T> {
     /// ```
     #[inline]
     pub unsafe fn decrement_strong_count(ptr: *const T) {
-        mem::drop(Rc::from_raw(ptr));
+        drop(Rc::from_raw(ptr));
     }
 
     /// Returns `true` if there are no other `Rc` or [`Weak`] pointers to
@@ -946,7 +946,7 @@ impl<T> Rc<T> {
             let (box_unique, alloc) = Box::into_unique(v);
             let bptr = box_unique.as_ptr();
 
-            let value_size = size_of_val(&*bptr);
+            let value_size = mem::size_of_val(&*bptr);
             let ptr = Self::allocate_for_ptr(bptr);
 
             // Copy value as bytes
@@ -1833,7 +1833,7 @@ unsafe fn data_offset<T: ?Sized>(ptr: *const T) -> isize {
     // and extern types, the input safety requirement is currently enough to
     // satisfy the requirements of align_of_val_raw; this is an implementation
     // detail of the language that may not be relied upon outside of std.
-    data_offset_align(align_of_val_raw(ptr))
+    data_offset_align(mem::align_of_val_raw(ptr))
 }
 
 #[inline]
@@ -1849,7 +1849,7 @@ fn data_offset_align(align: usize) -> isize {
 // For example if `Box` is changed to  `struct Box<T: ?Sized, A: Allocator>(Unique<T>, A)`,
 // this function has to be changed to `fn box_free<T: ?Sized, A: Allocator>(Unique<T>, A)` as well.
 pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: Unique<T>, alloc: A) {
-    let size = size_of_val(ptr.as_ref());
+    let size = mem::size_of_val(ptr.as_ref());
     let align = min_align_of_val(ptr.as_ref());
     let layout = Layout::from_size_align_unchecked(size, align);
     alloc.deallocate(ptr.cast().into(), layout);

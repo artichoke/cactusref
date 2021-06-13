@@ -65,12 +65,12 @@ impl<T> Links<T> {
     }
 
     #[inline]
-    pub fn iter(&self) -> Iter<Link<T>, usize> {
+    pub fn iter(&self) -> Iter<'_, Link<T>, usize> {
         self.registry.iter()
     }
 
     #[inline]
-    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<Link<T>, usize, F>
+    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, Link<T>, usize, F>
     where
         F: FnMut(&Link<T>, &mut usize) -> bool,
     {

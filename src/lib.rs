@@ -9,12 +9,19 @@
     slice_ptr_get
 )]
 #![allow(incomplete_features)]
-#![deny(broken_intra_doc_links, missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![warn(clippy::cargo)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::inline_always)]
 #![allow(clippy::option_if_let_else)]
+#![allow(unknown_lints)]
+#![warn(missing_copy_implementations)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
+#![warn(rust_2018_idioms)]
+#![warn(unused_qualifications)]
+#![warn(variant_size_differences)]
 
 //! # 🌵 `CactusRef`
 //!
