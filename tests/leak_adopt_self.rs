@@ -33,5 +33,6 @@ fn leak_adopt_self() {
         Rc::adopt(&first, &first);
     }
     assert_eq!(first.borrow().inner, s);
+    assert!(first.borrow().link.is_some());
     drop(first);
 }

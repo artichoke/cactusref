@@ -98,6 +98,7 @@ fn leak_doubly_linked_list() {
         .collect::<Vec<_>>();
     let mut list = List::from(list);
     let head = list.pop().unwrap();
+    assert!(head.borrow().data.starts_with("a"));
     assert_eq!(Rc::strong_count(&head), 1);
     assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
     let weak = Rc::downgrade(&head);

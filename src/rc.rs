@@ -476,6 +476,8 @@ impl<T> Rc<T> {
     /// let x = Rc::new("hello".to_owned());
     /// let x_ptr = Rc::into_raw(x);
     /// assert_eq!(unsafe { &*x_ptr }, "hello");
+    /// // Reconstruct the `Rc` to avoid a leak.
+    /// let _ = unsafe { Rc::from_raw(x_ptr) };
     /// ```
     pub fn into_raw(this: Self) -> *const T {
         let ptr = Self::as_ptr(&this);
@@ -628,6 +630,9 @@ impl<T> Rc<T> {
     ///
     ///     let five = Rc::from_raw(ptr);
     ///     assert_eq!(2, Rc::strong_count(&five));
+    ///
+    ///     // Decrement the strong count to avoid a leak.
+    ///     Rc::decrement_strong_count(ptr);
     /// }
     /// ```
     #[inline]
