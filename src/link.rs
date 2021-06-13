@@ -1,15 +1,18 @@
+//! This module includes data structures for building an object graph.
+
 use core::cell::Cell;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::num::NonZeroUsize;
 use core::ptr::{self, NonNull};
+
 use hashbrown::hash_map::{DrainFilter, Iter};
 use hashbrown::HashMap;
 
 use crate::rc::{RcBox, RcInnerPtr};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum Kind {
+pub(crate) enum Kind {
     Forward,
     Backward,
     Loopback,
@@ -79,9 +82,12 @@ impl<T> Links<T> {
 /// Link represents a directed edge in the object graph of strong CactusRef `Rc`
 /// smart pointers.
 ///
-/// Links can either be forward, which means the `Rc` storing the link is
-/// adopting the link's pointee; or backward, which means this `Rc` is being
-/// adopted by the link's pointee.
+/// Links can be one of several types:
+///
+/// - Forward, which means the `Rc` storing the link is adopting the link's
+///   pointee.
+/// - Backward, which means this `Rc` is being adopted by the link's pointee.
+/// - Loopback, which means the `Rc` has adopted itself.
 pub(crate) struct Link<T> {
     ptr: NonNull<RcBox<T>>,
     kind: Kind,
@@ -119,6 +125,7 @@ impl<T> Link<T> {
         }
     }
 
+    #[inline]
     pub const fn loopback(ptr: NonNull<RcBox<T>>) -> Self {
         Self {
             ptr,
