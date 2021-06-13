@@ -44,7 +44,7 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     /// ```
     ///
     /// ```
-    /// use cactusref::{Adoptable, Rc};
+    /// use cactusref::{Adopt, Rc};
     ///
     /// struct Foo(u8);
     ///

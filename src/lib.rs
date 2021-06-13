@@ -90,7 +90,7 @@
 //! deallocated once the `list` binding is dropped.
 //!
 //! ```rust
-//! use cactusref::{Adoptable, Rc};
+//! use cactusref::{Adopt, Rc};
 //! use std::cell::RefCell;
 //! use std::iter;
 //!
@@ -193,15 +193,15 @@ extern crate alloc;
 #[macro_use]
 extern crate log;
 
-mod adoptable;
-mod cyclic;
+mod adopt;
+mod cycle;
 mod drop;
 mod link;
 mod rc;
 //#[cfg(test)]
 //mod tests;
 
-pub use adoptable::Adoptable;
+pub use adopt::Adopt;
 pub use rc::Rc;
 pub use rc::Weak;
 

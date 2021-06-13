@@ -1,7 +1,7 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
-use cactusref::{Adoptable, Rc};
+use cactusref::{Adopt, Rc};
 use core::cell::RefCell;
 
 struct RString {

@@ -1,7 +1,7 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
-use cactusref::{Adoptable, Rc, Weak};
+use cactusref::{Adopt, Rc, Weak};
 use core::cell::RefCell;
 
 struct RArray {

@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
-use cactusref::{Adoptable, Rc};
+use cactusref::{Adopt, Rc};
 
 struct Node {
     links: Vec<Rc<RefCell<Self>>>,

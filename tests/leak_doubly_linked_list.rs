@@ -2,7 +2,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::shadow_unrelated)]
 
-use cactusref::{Adoptable, Rc};
+use cactusref::{Adopt, Rc};
 use core::cell::RefCell;
 use core::iter;
 

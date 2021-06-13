@@ -5,6 +5,20 @@ use crate::rc::RcInnerPtr;
 use crate::Rc;
 
 impl<T> Rc<T> {
+    /// Traverse the linked object graph from the given `Rc` to determine if the
+    /// graph is not externally reachable.
+    ///
+    /// Cycles are discovered using breadth-first search of the graph's adopted
+    /// links.
+    ///
+    /// If this function returns `Some(_)`, the graph of `Rc`s would leak using
+    /// `std::rc::Rc`.
+    ///
+    /// This funtion returns a hash map of forward links to the number of times
+    /// the link appears in the cycle.
+    ///
+    /// This function is invoked during `drop` to determine which strategy to use
+    /// for deallocating a group of `Rc`s.
     pub(crate) fn orphaned_cycle(this: &Self) -> Option<HashMap<Link<T>, usize>> {
         let cycle = cycle_refs(Link::forward(this.ptr));
         if cycle.is_empty() {
@@ -26,7 +40,7 @@ impl<T> Rc<T> {
 fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
     // These collections track compute the layout of the object graph in linear
     // time in the size of the graph.
-    let mut cycle_owned_refs = HashMap::default();
+    let mut cycle_owned_refs = HashMap::new();
     let mut discovered = vec![this];
     let mut visited = HashSet::new();
 
@@ -36,14 +50,15 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
             continue;
         }
         visited.insert(node);
+
         let links = unsafe { node.as_ref().links().borrow() };
-        for (link, strong) in links.iter() {
+        for (&link, &strong) in links.iter() {
             if let Kind::Forward = link.kind() {
                 cycle_owned_refs
-                    .entry(*link)
+                    .entry(link)
                     .and_modify(|count| *count += strong)
-                    .or_insert(*strong);
-                discovered.push(*link);
+                    .or_insert(strong);
+                discovered.push(link);
             } else {
                 cycle_owned_refs.entry(link.as_forward()).or_default();
             }
