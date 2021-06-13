@@ -1,0 +1,18 @@
+---
+require: rubocop-rake
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 2.6
+  DisplayCopNames: true
+  Exclude:
+    - "**/node_modules/**/*"
+    - "**/target/**/*"
+    - "**/vendor/**/*"
+Layout/LineLength:
+  Enabled: true
+  Exclude:
+    - "**/Rakefile"
+Metrics:
+  Enabled: false
+Style/Documentation:
+  Enabled: false

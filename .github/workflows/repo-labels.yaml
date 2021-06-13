@@ -1,0 +1,31 @@
+---
+"on":
+  push:
+    branches:
+      - trunk
+    paths:
+      - .github/labels.yaml
+      - .github/workflows/repo-labels.yaml
+  pull_request:
+    branches:
+      - trunk
+    paths:
+      - .github/labels.yaml
+      - .github/workflows/repo-labels.yaml
+  schedule:
+    - cron: "0 0 * * TUE"
+name: Create Repository Labels
+jobs:
+  labels:
+    name: Synchronize repository labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Sync GitHub Issue Labels
+        uses: crazy-max/ghaction-github-labeler@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yaml
+          skip-delete: false
+          dry-run: ${{ github.ref != 'refs/heads/trunk' }}
