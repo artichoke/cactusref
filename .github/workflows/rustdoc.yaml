@@ -1,0 +1,40 @@
+---
+name: Documentation
+"on":
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+  schedule:
+    - cron: "0 0 * * WED"
+jobs:
+  rustdoc:
+    name: Build Rust API docs
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -D warnings -D rustdoc::broken_intra_doc_links --cfg docsrs
+      RUST_BACKTRACE: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+
+      - name: Build Documentation
+        run: cargo doc
+
+      - name: Deploy Docs
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/trunk'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          publish_branch: gh-pages
+          user_name: artichoke-ci
+          user_email: ci@artichokeruby.org

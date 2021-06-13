@@ -1,0 +1,41 @@
+---
+name: Bench
+"on":
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+  schedule:
+    - cron: "0 0 * * WED"
+jobs:
+  bench:
+    name: Bench
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+      RUST_BACKTRACE: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+
+      - name: Compile
+        run: cargo build --verbose
+        working-directory: benchmarks
+
+      - name: Compile tests
+        run: cargo bench --no-run
+        working-directory: benchmarks
+
+      - name: Test
+        if: github.ref == 'refs/heads/trunk'
+        run: cargo bench
+        working-directory: benchmarks

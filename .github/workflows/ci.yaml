@@ -1,0 +1,152 @@
+---
+name: CI
+"on":
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+  schedule:
+    - cron: "0 0 * * WED"
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+    env:
+      RUSTFLAGS: -D warnings
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+
+      - name: Compile
+        run: cargo build --verbose
+
+      - name: Compile tests
+        run: cargo test --no-run
+
+      - name: Test
+        run: cargo test
+
+      - name: Test with all features
+        run: cargo test --all-features
+
+      - name: Test with no default features
+        run: cargo test --no-default-features
+
+      - name: Install nightly Rust toolchain
+        if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          target: ${{ matrix.target }}
+
+      - name: Test with leak sanitizer and all features
+        if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
+        run: cargo test --all-features --target ${{ matrix.target }}
+        env:
+          RUSTFLAGS: "-Z sanitizer=leak"
+
+  build_x86:
+    name: Build 32-bit
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+    env:
+      RUSTFLAGS: -D warnings
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.target }}
+
+      - name: Install 32-bit platform support
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt install gcc-multilib
+
+      - name: Compile
+        run: cargo build --verbose --target ${{ matrix.target }}
+
+      - name: Compile tests
+        run: cargo test --no-run --target ${{ matrix.target }}
+
+      - name: Test
+        run: cargo test --target ${{ matrix.target }}
+
+      - name: Test with all features
+        run: cargo test --all-features --target ${{ matrix.target }}
+
+      - name: Test with no default features
+        run: cargo test --no-default-features --target ${{ matrix.target }}
+
+  rust:
+    name: Lint and format Rust
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt -- --check --color=auto
+
+      - name: Lint with Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features --all-targets
+
+  text:
+    name: Lint and format text
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Format with prettier
+        run: npx prettier --check '**/*'
+
+      - name: Lint YAML sources with yamllint
+        run: |
+          yamllint --version
+          echo "Linting YAML sources with yamllint ..."
+          yamllint --strict --format github .
+          echo "OK"
