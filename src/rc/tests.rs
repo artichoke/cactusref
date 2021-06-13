@@ -3,9 +3,13 @@ use std::mem::{drop, size_of};
 
 use super::{Rc, RcBox, Weak};
 
+// This test documents the size of `RcBox`, the inner allocation of the `Rc`.
+//
+// Feel free to change this test so it passes, but document in PRs when it
+// changes and why it does.
 #[test]
 fn size_of_rcbox() {
-    assert_eq!(size_of::<RcBox<i32>>(), 96);
+    assert_eq!(size_of::<RcBox<i32>>(), 64);
 }
 
 #[test]

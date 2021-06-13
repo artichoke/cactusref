@@ -6,9 +6,8 @@ use core::hash::{Hash, Hasher};
 use core::num::NonZeroUsize;
 use core::ptr::{self, NonNull};
 
-use hashbrown::hash_map::{DrainFilter, Iter};
-use hashbrown::HashMap;
-
+use crate::hash::hash_map::{DrainFilter, Iter};
+use crate::hash::HashMap;
 use crate::rc::{RcBox, RcInnerPtr};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -35,7 +34,7 @@ impl<T> Links<T> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            registry: HashMap::new(),
+            registry: HashMap::default(),
         }
     }
 

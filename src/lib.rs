@@ -199,6 +199,7 @@ extern crate log;
 mod adopt;
 mod cycle;
 mod drop;
+mod hash;
 mod link;
 mod rc;
 //#[cfg(test)]

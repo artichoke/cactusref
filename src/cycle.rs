@@ -1,5 +1,4 @@
-use hashbrown::{HashMap, HashSet};
-
+use crate::hash::{HashMap, HashSet};
 use crate::link::{Kind, Link};
 use crate::rc::RcInnerPtr;
 use crate::Rc;
@@ -40,9 +39,9 @@ impl<T> Rc<T> {
 fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
     // These collections track compute the layout of the object graph in linear
     // time in the size of the graph.
-    let mut cycle_owned_refs = HashMap::new();
+    let mut cycle_owned_refs = HashMap::default();
     let mut discovered = vec![this];
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     // crawl the graph
     while let Some(node) = discovered.pop() {

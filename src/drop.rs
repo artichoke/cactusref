@@ -1,8 +1,8 @@
 use alloc::alloc::{dealloc, Layout};
 use core::ptr;
-use hashbrown::HashMap;
 use std::mem::{self, MaybeUninit};
 
+use crate::hash::HashMap;
 use crate::link::{Kind, Link};
 use crate::rc::RcInnerPtr;
 use crate::Rc;
