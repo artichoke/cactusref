@@ -6,7 +6,7 @@ use core::cell::RefCell;
 
 struct RArray {
     inner: Vec<Rc<RefCell<Self>>>,
-    _alloc: String,
+    alloc: String,
 }
 
 #[test]
@@ -19,7 +19,7 @@ fn weak_upgrade_returns_none_when_cycle_is_deallocated() {
 
     let vec = Rc::new(RefCell::new(RArray {
         inner: vec![],
-        _alloc: s.clone(),
+        alloc: s,
     }));
     for _ in 0..10 {
         vec.borrow_mut().inner.push(Rc::clone(&vec));
@@ -30,6 +30,7 @@ fn weak_upgrade_returns_none_when_cycle_is_deallocated() {
     assert_eq!(Rc::strong_count(&vec), 11);
     let weak = Rc::downgrade(&vec);
     assert!(weak.upgrade().is_some());
+    assert!(weak.upgrade().unwrap().borrow().alloc.starts_with('a'));
     assert_eq!(weak.weak_count(), 1);
     drop(vec);
     assert!(weak.upgrade().is_none());

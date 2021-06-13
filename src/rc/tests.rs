@@ -249,21 +249,21 @@ fn test_cowrc_clone_weak() {
 
 #[test]
 fn test_show() {
-    let foo = Rc::new(75);
-    assert_eq!(format!("{:?}", foo), "75");
+    let num = Rc::new(75);
+    assert_eq!(format!("{:?}", num), "75");
 }
 
 #[test]
 fn test_from_owned() {
-    let foo = 123;
-    let foo_rc = Rc::from(foo);
-    assert!(123 == *foo_rc);
+    let num = 123;
+    let num_rc = Rc::from(num);
+    assert!(123 == *num_rc);
 }
 
 #[test]
 fn test_new_weak() {
-    let foo: Weak<usize> = Weak::new();
-    assert!(foo.upgrade().is_none());
+    let weak: Weak<usize> = Weak::new();
+    assert!(weak.upgrade().is_none());
 }
 
 #[test]

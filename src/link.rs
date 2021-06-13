@@ -53,7 +53,7 @@ impl<T> Links<T> {
 
     #[inline]
     pub fn clear(&mut self) {
-        self.registry.clear()
+        self.registry.clear();
     }
 
     #[inline]

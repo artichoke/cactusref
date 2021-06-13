@@ -222,7 +222,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
             links
                 .drain_filter(|link, _| {
                     if let Kind::Forward = link.kind() {
-                        cycle.contains_key(&link)
+                        cycle.contains_key(link)
                     } else {
                         false
                     }

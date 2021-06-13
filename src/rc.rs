@@ -366,6 +366,7 @@ impl<T> Rc<T> {
     ///
     /// assert_eq!(*five, 5)
     /// ```
+    #[must_use]
     pub fn new_uninit() -> Rc<mem::MaybeUninit<T>> {
         unsafe {
             Rc::from_ptr(Rc::allocate_for_layout(
@@ -455,6 +456,7 @@ impl<T> Rc<MaybeUninit<T>> {
     /// assert_eq!(*five, 5)
     /// ```
     #[inline]
+    #[must_use]
     pub unsafe fn assume_init(self) -> Rc<T> {
         Rc::from_inner(ManuallyDrop::new(self).ptr.cast())
     }
@@ -479,6 +481,7 @@ impl<T> Rc<T> {
     /// // Reconstruct the `Rc` to avoid a leak.
     /// let _ = unsafe { Rc::from_raw(x_ptr) };
     /// ```
+    #[must_use]
     pub fn into_raw(this: Self) -> *const T {
         let ptr = Self::as_ptr(&this);
         mem::forget(this);
@@ -501,6 +504,7 @@ impl<T> Rc<T> {
     /// assert_eq!(x_ptr, Rc::as_ptr(&y));
     /// assert_eq!(unsafe { &*x_ptr }, "hello");
     /// ```
+    #[must_use]
     pub fn as_ptr(this: &Self) -> *const T {
         let ptr: *mut RcBox<T> = NonNull::as_ptr(this.ptr);
 
@@ -567,6 +571,7 @@ impl<T> Rc<T> {
     ///
     /// let weak_five = Rc::downgrade(&five);
     /// ```
+    #[must_use]
     pub fn downgrade(this: &Self) -> Weak<T> {
         this.inner().inc_weak();
         // Make sure we do not create a dangling Weak
@@ -587,6 +592,7 @@ impl<T> Rc<T> {
     /// assert_eq!(1, Rc::weak_count(&five));
     /// ```
     #[inline]
+    #[must_use]
     pub fn weak_count(this: &Self) -> usize {
         this.inner().weak() - 1
     }
@@ -604,6 +610,7 @@ impl<T> Rc<T> {
     /// assert_eq!(2, Rc::strong_count(&five));
     /// ```
     #[inline]
+    #[must_use]
     pub fn strong_count(this: &Self) -> usize {
         this.inner().strong()
     }
@@ -673,7 +680,7 @@ impl<T> Rc<T> {
     /// ```
     #[inline]
     pub unsafe fn decrement_strong_count(ptr: *const T) {
-        mem::drop(Rc::from_raw(ptr))
+        mem::drop(Rc::from_raw(ptr));
     }
 
     /// Returns `true` if there are no other `Rc` or [`Weak`] pointers to
@@ -771,6 +778,7 @@ impl<T> Rc<T> {
     ///
     /// [`ptr::eq`]: core::ptr::eq
     #[inline]
+    #[must_use]
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
         this.ptr.as_ptr() == other.ptr.as_ptr()
     }
@@ -1046,6 +1054,7 @@ impl<T: PartialEq> PartialEq for Rc<T> {
     /// assert!(five != Rc::new(6));
     /// ```
     #[inline]
+    #[allow(clippy::partialeq_ne_impl)]
     fn ne(&self, other: &Rc<T>) -> bool {
         **self != **other
     }
@@ -1297,6 +1306,7 @@ impl<T> Weak<T> {
     /// let empty: Weak<i64> = Weak::new();
     /// assert!(empty.upgrade().is_none());
     /// ```
+    #[must_use]
     pub fn new() -> Weak<T> {
         Weak {
             ptr: NonNull::new(usize::MAX as *mut RcBox<T>).expect("MAX is not 0"),
@@ -1342,6 +1352,7 @@ impl<T> Weak<T> {
     /// ```
     ///
     /// [`null`]: core::ptr::null
+    #[must_use]
     pub fn as_ptr(&self) -> *const T {
         let ptr: *mut RcBox<T> = NonNull::as_ptr(self.ptr);
 
@@ -1387,6 +1398,7 @@ impl<T> Weak<T> {
     ///
     /// [`from_raw`]: Weak::from_raw
     /// [`as_ptr`]: Weak::as_ptr
+    #[must_use]
     pub fn into_raw(self) -> *const T {
         let result = self.as_ptr();
         mem::forget(self);
@@ -1479,6 +1491,7 @@ impl<T> Weak<T> {
     ///
     /// assert!(weak_five.upgrade().is_none());
     /// ```
+    #[must_use]
     pub fn upgrade(&self) -> Option<Rc<T>> {
         let inner = self.inner()?;
         if inner.is_dead() {
@@ -1492,6 +1505,7 @@ impl<T> Weak<T> {
     /// Gets the number of strong (`Rc`) pointers pointing to this allocation.
     ///
     /// If `self` was created using [`Weak::new`], this will return 0.
+    #[must_use]
     pub fn strong_count(&self) -> usize {
         if let Some(inner) = self.inner() {
             if inner.is_uninit() {
@@ -1507,23 +1521,23 @@ impl<T> Weak<T> {
     /// Gets the number of `Weak` pointers pointing to this allocation.
     ///
     /// If no strong pointers remain, this will return zero.
+    #[must_use]
     pub fn weak_count(&self) -> usize {
-        self.inner()
-            .map(|inner| {
-                if inner.is_uninit() {
-                    0
-                } else if inner.strong() > 0 {
-                    inner.weak() - 1 // subtract the implicit weak ptr
-                } else {
-                    0
-                }
-            })
-            .unwrap_or(0)
+        self.inner().map_or(0, |inner| {
+            if inner.is_uninit() {
+                0
+            } else if inner.strong() > 0 {
+                inner.weak() - 1 // subtract the implicit weak ptr
+            } else {
+                0
+            }
+        })
     }
 
     /// Returns `None` when the pointer is dangling and there is no allocated `RcBox`,
     /// (i.e., when this `Weak` was created by `Weak::new`).
     #[inline]
+    #[must_use]
     fn inner(&self) -> Option<WeakInner<'_>> {
         if is_dangling(self.ptr.as_ptr()) {
             None
@@ -1583,6 +1597,7 @@ impl<T> Weak<T> {
     ///
     /// [`ptr::eq`]: core::ptr::eq
     #[inline]
+    #[must_use]
     pub fn ptr_eq(&self, other: &Self) -> bool {
         self.ptr.as_ptr() == other.ptr.as_ptr()
     }
@@ -1646,7 +1661,7 @@ impl<T> Clone for Weak<T> {
     #[inline]
     fn clone(&self) -> Weak<T> {
         if let Some(inner) = self.inner() {
-            inner.inc_weak()
+            inner.inc_weak();
         }
         Weak { ptr: self.ptr }
     }
@@ -1837,5 +1852,5 @@ pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: Unique<T>, alloc: A)
     let size = size_of_val(ptr.as_ref());
     let align = min_align_of_val(ptr.as_ref());
     let layout = Layout::from_size_align_unchecked(size, align);
-    alloc.deallocate(ptr.cast().into(), layout)
+    alloc.deallocate(ptr.cast().into(), layout);
 }

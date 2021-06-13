@@ -12,6 +12,9 @@
 #![deny(broken_intra_doc_links, missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::inline_always)]
+#![allow(clippy::option_if_let_else)]
 
 //! # 🌵 `CactusRef`
 //!

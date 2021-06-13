@@ -23,8 +23,8 @@ impl<T> List<T> {
         let next = head.borrow_mut().next.take();
         if let Some(ref tail) = tail {
             unsafe {
-                Rc::unadopt(&head, &tail);
-                Rc::unadopt(&tail, &head);
+                Rc::unadopt(&head, tail);
+                Rc::unadopt(tail, &head);
             }
             tail.borrow_mut().next = next.as_ref().map(Rc::clone);
             if let Some(ref next) = next {
@@ -35,8 +35,8 @@ impl<T> List<T> {
         }
         if let Some(ref next) = next {
             unsafe {
-                Rc::unadopt(&head, &next);
-                Rc::unadopt(&next, &head);
+                Rc::unadopt(&head, next);
+                Rc::unadopt(next, &head);
             }
             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
             if let Some(ref tail) = tail {
@@ -98,7 +98,7 @@ fn leak_doubly_linked_list() {
         .collect::<Vec<_>>();
     let mut list = List::from(list);
     let head = list.pop().unwrap();
-    assert!(head.borrow().data.starts_with("a"));
+    assert!(head.borrow().data.starts_with('a'));
     assert_eq!(Rc::strong_count(&head), 1);
     assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
     let weak = Rc::downgrade(&head);
