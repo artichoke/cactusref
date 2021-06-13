@@ -140,7 +140,7 @@ fn bench_chain_with_no_adoptions(c: &mut Criterion) {
 }
 
 fn bench_chain_with_adoptions(c: &mut Criterion) {
-    let mut group = c.benchmark_group("drop a chain with no adoptions");
+    let mut group = c.benchmark_group("drop a chain with adoptions");
     group.bench_function("10 nodes", |b| {
         b.iter_batched(
             || chain_with_adoptions(black_box(10)),
