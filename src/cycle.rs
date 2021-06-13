@@ -64,20 +64,36 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
             }
         }
     }
+
     #[cfg(debug_assertions)]
     debug_cycle(&cycle_owned_refs);
     cycle_owned_refs
 }
 
-#[inline]
 #[cfg(debug_assertions)]
 fn debug_cycle<T>(cycle: &HashMap<Link<T>, usize>) {
+    if cycle.is_empty() {
+        trace!("cactusref reachability test found no cycles");
+        return;
+    }
+
     let counts = cycle
         .iter()
         .map(|(item, cycle_count)| (item.as_ref().strong(), cycle_count))
         .collect::<Vec<_>>();
-    trace!(
-        "cactusref reachability test found (strong, cycle) counts: {:?}",
-        counts
-    );
+    let has_external_owners = cycle
+        .iter()
+        .any(|(item, &cycle_owned_refs)| item.strong() > cycle_owned_refs);
+
+    if has_external_owners {
+        trace!(
+            "cactusref reachability test found externally owned cycle with (strong, cycle) counts: {:?}",
+            counts
+        );
+    } else {
+        trace!(
+            "cactusref reachability test found unreachable cycle  with (strong, cycle) counts: {:?}",
+            counts
+        );
+    }
 }
