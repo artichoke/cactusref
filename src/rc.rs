@@ -1904,5 +1904,5 @@ pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: NonNull<T>, alloc: A
     let size = mem::size_of_val(ptr.as_ref());
     let align = min_align_of_val(ptr.as_ref());
     let layout = Layout::from_size_align_unchecked(size, align);
-    alloc.deallocate(ptr.cast().into(), layout);
+    alloc.deallocate(ptr.cast(), layout);
 }
