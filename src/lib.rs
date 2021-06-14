@@ -125,7 +125,7 @@
 //!
 //! [`std::rc::Rc`]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html
 
-#![doc(html_root_url = "https://docs.rs/cactusref/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/cactusref/0.1.1")]
 
 // Ensure code blocks in README.md compile
 #[cfg(doctest)]
