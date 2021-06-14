@@ -1,10 +1,11 @@
 ---
 title: "Cactus Harvesting: Cycle-Aware Reference Counting in Rust"
+publishDate: "2019-07-15"
 slug: cactus-harvesting
-summary:
-  "🌵 CactusRef lets you build cyclic data structures using strong references
-  and knows how to deallocate unreachable cycles. You can use CactusRef to
-  implement a doubly linked list. The CactusRef API is compatible with std::rc."
+summary: >-
+  🌵 CactusRef lets you build cyclic data structures using strong references and
+  knows how to deallocate unreachable cycles. You can use CactusRef to implement
+  a doubly linked list. The CactusRef API is compatible with std::rc.
 ---
 
 _This is a copy of a [blog post](https://hyperbo.la/w/cactus-harvesting/) by
@@ -17,9 +18,14 @@ There was some
 [[docs](https://artichoke.github.io/cactusref/cactusref/)]
 [[code](https://github.com/artichoke/cactusref/tree/252ded0caf9bd9c5814cd8020b44176a1edbeb9e)].
 CactusRef is nearly a drop-in replacement for
-[`std::rc`](https://doc.rust-lang.org/std/rc/index.html)[^std-rc-api-compat]
-from the Rust standard library. Throughout this post, `Rc` refers to
-`cactusref::Rc`. I will refer to `std::rc::Rc` with its fully qualified name.
+[`std::rc`](https://doc.rust-lang.org/std/rc/index.html) from the Rust standard
+library. (CactusRef implements all `std::rc::Rc` APIs except for
+[`std::rc::Rc::downcast`](https://doc.rust-lang.org/std/rc/struct.Rc.html#method.downcast),
+[`CoerceUnsized`](https://doc.rust-lang.org/nightly/core/ops/trait.CoerceUnsized.html),
+and
+[`DispatchFromDyn`](https://doc.rust-lang.org/nightly/core/ops/trait.DispatchFromDyn.html).)
+Throughout this post, `Rc` refers to `cactusref::Rc`. I will refer to
+`std::rc::Rc` with its fully qualified name.
 
 ### Motivation
 
@@ -305,11 +311,3 @@ Thank you [Stephen](https://github.com/tummychow) and
 
 Thank you to the segfaults along the way for helping me find bugs in the cycle
 detection and drop implementations. 😱
-
-[^std-rc-api-compat]:
-
-CactusRef implements all `std::rc::Rc` APIs except for
-[`std::rc::Rc::downcast`](https://doc.rust-lang.org/std/rc/struct.Rc.html#method.downcast),
-[`CoerceUnsized`](https://doc.rust-lang.org/nightly/core/ops/trait.CoerceUnsized.html),
-and
-[`DispatchFromDyn`](https://doc.rust-lang.org/nightly/core/ops/trait.DispatchFromDyn.html).
