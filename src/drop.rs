@@ -204,7 +204,7 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     (*rcbox).dec_weak();
 
     if (*rcbox).weak() == 0 {
-        Global.deallocate(nonnull.cast(), Layout::for_value_raw(rcbox));
+        Global.deallocate(nonnull.cast(), Layout::for_value(nonnull.as_ref()));
     }
 }
 
@@ -325,7 +325,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
                 "no more weak references, deallocating layout for item {:?} in orphaned cycle",
                 ptr
             );
-            Global.deallocate(ptr.cast(), Layout::for_value_raw(rcbox));
+            Global.deallocate(ptr.cast(), Layout::for_value(ptr.as_ref()));
         }
     }
 }
@@ -421,6 +421,6 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
             "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
             this.ptr
         );
-        Global.deallocate(nonnull.cast(), Layout::for_value_raw(rcbox));
+        Global.deallocate(nonnull.cast(), Layout::for_value(nonnull.as_ref()));
     }
 }

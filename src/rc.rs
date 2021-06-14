@@ -1691,7 +1691,7 @@ unsafe impl<#[may_dangle] T> Drop for Weak<T> {
         // the strong pointers have disappeared.
         if inner.weak() == 0 {
             unsafe {
-                Global.deallocate(self.ptr.cast(), Layout::for_value_raw(self.ptr.as_ptr()));
+                Global.deallocate(self.ptr.cast(), Layout::for_value(self.ptr.as_ref()));
             }
         }
     }
