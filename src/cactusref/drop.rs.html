@@ -450,8 +450,8 @@
     <span class="doccomment">/// orphaned cycle is a cycle in which all members have no owned references</span>
     <span class="doccomment">/// held by `Rc`s outside of the cycle.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Cycle detection is a zero-cost abstraction. `Rc`s do not pay the cost of</span>
-    <span class="doccomment">/// the reachability check unless they use [`Adopt::adopt`].</span>
+    <span class="doccomment">/// `Rc`s do not pay the cost of the reachability check unless they use</span>
+    <span class="doccomment">/// [`Adopt::adopt`].</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`Adopt::adopt`]: crate::Adopt::adopt</span>
     <span class="doccomment">///</span>

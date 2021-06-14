@@ -397,8 +397,8 @@ so we <code>drop</code> the inner value.</p>
 object graph and detect if this <code>Rc</code> is part of an orphaned cycle. An
 orphaned cycle is a cycle in which all members have no owned references
 held by <code>Rc</code>s outside of the cycle.</p>
-<p>Cycle detection is a zero-cost abstraction. <code>Rc</code>s do not pay the cost of
-the reachability check unless they use <a href="trait.Adopt.html#tymethod.adopt"><code>Adopt::adopt</code></a>.</p>
+<p><code>Rc</code>s do not pay the cost of the reachability check unless they use
+<a href="trait.Adopt.html#tymethod.adopt"><code>Adopt::adopt</code></a>.</p>
 <h1 id="examples-18" class="section-header"><a href="#examples-18">Examples</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="kw">use</span> <span class="ident">cactusref::Rc</span>;
