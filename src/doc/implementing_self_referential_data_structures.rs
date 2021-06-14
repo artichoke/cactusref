@@ -1,13 +1,16 @@
-//! # Self-Referential Structures
-//!
 //! `CactusRef` can be used to implement collections that own strong references
-//! to themselves. The following implements a doubly-linked list that is fully
-//! deallocated once the `list` binding is dropped.
+//! to themselves.
+//!
+//! # Doubly-linked List
+//!
+//! The following implements a doubly-linked list that is fully deallocated once
+//! the `list` binding is dropped.
 //!
 //! ```rust
-//! use cactusref::{Adopt, Rc};
 //! use std::cell::RefCell;
 //! use std::iter;
+//!
+//! use cactusref::{Adopt, Rc};
 //!
 //! struct Node<T> {
 //!     pub prev: Option<Rc<RefCell<Self>>>,
@@ -26,8 +29,8 @@
 //!         let next = head.borrow_mut().next.take();
 //!         if let Some(ref tail) = tail {
 //!             unsafe {
-//!                 Rc::unadopt(&head, &tail);
-//!                 Rc::unadopt(&tail, &head);
+//!                 Rc::unadopt(&head, tail);
+//!                 Rc::unadopt(tail, &head);
 //!             }
 //!             tail.borrow_mut().next = next.as_ref().map(Rc::clone);
 //!             if let Some(ref next) = next {
@@ -38,8 +41,8 @@
 //!         }
 //!         if let Some(ref next) = next {
 //!             unsafe {
-//!                 Rc::unadopt(&head, &next);
-//!                 Rc::unadopt(&next, &head);
+//!                 Rc::unadopt(&head, next);
+//!                 Rc::unadopt(next, &head);
 //!             }
 //!             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
 //!             if let Some(ref tail) = tail {
@@ -94,12 +97,24 @@
 //!     .take(10)
 //!     .collect::<Vec<_>>();
 //! let mut list = List::from(list);
+//!
 //! let head = list.pop().unwrap();
 //! assert_eq!(Rc::strong_count(&head), 1);
+//! assert!(head.borrow().data.starts_with('a'));
+//!
+//! // The new head of the list is owned three times:
+//! //
+//! // - itself.
+//! // - the `prev` pointer to it from it's next element.
+//! // - the `next` pointer from the list's tail.
 //! assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
+//!
+//! // The popped head is no longer part of the graph and can be safely dropped
+//! // and deallocated.
 //! let weak = Rc::downgrade(&head);
 //! drop(head);
 //! assert!(weak.upgrade().is_none());
+//!
 //! drop(list);
 //! // all memory consumed by the list nodes is reclaimed.
 //! ```

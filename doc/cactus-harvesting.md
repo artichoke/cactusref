@@ -308,8 +308,8 @@ detection and drop implementations. 😱
 
 [^std-rc-api-compat]:
 
-  CactusRef implements all `std::rc::Rc` APIs except for
-  [`std::rc::Rc::downcast`](https://doc.rust-lang.org/std/rc/struct.Rc.html#method.downcast),
-  [`CoerceUnsized`](https://doc.rust-lang.org/nightly/core/ops/trait.CoerceUnsized.html),
-  and
-  [`DispatchFromDyn`](https://doc.rust-lang.org/nightly/core/ops/trait.DispatchFromDyn.html).
+CactusRef implements all `std::rc::Rc` APIs except for
+[`std::rc::Rc::downcast`](https://doc.rust-lang.org/std/rc/struct.Rc.html#method.downcast),
+[`CoerceUnsized`](https://doc.rust-lang.org/nightly/core/ops/trait.CoerceUnsized.html),
+and
+[`DispatchFromDyn`](https://doc.rust-lang.org/nightly/core/ops/trait.DispatchFromDyn.html).
