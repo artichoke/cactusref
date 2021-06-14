@@ -21,8 +21,8 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     /// orphaned cycle is a cycle in which all members have no owned references
     /// held by `Rc`s outside of the cycle.
     ///
-    /// Cycle detection is a zero-cost abstraction. `Rc`s do not pay the cost of
-    /// the reachability check unless they use [`Adopt::adopt`].
+    /// `Rc`s do not pay the cost of the reachability check unless they use
+    /// [`Adopt::adopt`].
     ///
     /// [`Adopt::adopt`]: crate::Adopt::adopt
     ///

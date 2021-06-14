@@ -33,7 +33,8 @@
 //! [`clone`]: Clone::clone
 //!
 //! `Rc` can **detect and deallocate cycles** of `Rc`s through the use of
-//! [`Adopt`]. Cycle detection is a zero-cost abstraction.
+//! [`Adopt`]. Cycle detection is opt-in and no reachability checks are
+//! performed unless graphs have adoptions.
 //!
 //! # Nightly
 //!
@@ -43,6 +44,21 @@
 //! nightly compiler as the one pinned in its `rust-toolchain` file.
 //!
 //! [alloc]: https://doc.rust-lang.org/stable/alloc/
+//!
+//! # Maturity
+//!
+//! CactusRef is experimental. This crate has several limitations:
+//!
+//! - CactusRef is nightly only.
+//! - CactusRef reimplements several `alloc` internals which means it may not be
+//!   safe to use on newer nightly versions than `nightly-2021-06-13`.
+//! - Cycle detection requires [unsafe code][adopt-api] to use.
+//!
+//! CactusRef is a non-trivial extension to `std::rc::Rc` and has not been
+//! proven to be safe. Although CactusRef makes a best effort to abort the
+//! program if it detects a dangling `Rc`, this crate may be unsound.
+//!
+//! [adopt-api]: crate::Adopt
 //!
 //! # CactusRef vs. `std::rc`
 //!
