@@ -77,9 +77,8 @@ pub unsafe trait Adopt: sealed::Sealed {
     unsafe fn unadopt(this: &Self, other: &Self);
 }
 
-/// Implementation of [`Adoptable`] for [`Rc`] which enables `Rc`s to form a
-/// cycle of strong references that are reaped by `Rc`'s [`Drop`]
-/// implementation.
+/// Implementation of [`Adopt`] for [`Rc`] which enables `Rc`s to form a cycle
+/// of strong references that are reaped by `Rc`'s [`Drop`] implementation.
 unsafe impl<T> Adopt for Rc<T> {
     /// Perform bookkeeping to record that `this` has an owned reference to
     /// `other`.

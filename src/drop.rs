@@ -11,8 +11,10 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     /// Drops the [`Rc`].
     ///
     /// This will decrement the strong reference count. If the strong reference
-    /// count reaches zero then the only other references (if any) are
-    /// [`Weak`](crate::Weak), so we `drop` the inner value.
+    /// count reaches zero then the only other references (if any) are [`Weak`],
+    /// so we `drop` the inner value.
+    ///
+    /// [`Weak`]: crate::Weak
     ///
     /// If this `Rc` has adopted any other `Rc`s, drop will trace the reachable
     /// object graph and detect if this `Rc` is part of an orphaned cycle. An
@@ -20,8 +22,9 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     /// held by `Rc`s outside of the cycle.
     ///
     /// Cycle detection is a zero-cost abstraction. `Rc`s do not pay the cost of
-    /// the reachability check unless they use
-    /// [`Adoptable::adopt`](crate::Adoptable).
+    /// the reachability check unless they use [`Adopt::adopt`].
+    ///
+    /// [`Adopt::adopt`]: crate::Adopt::adopt
     ///
     /// # Examples
     ///
@@ -68,16 +71,20 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     ///
     /// # Cycle Detection and Deallocation Algorithm
     ///
-    /// [`Rc::adopt`](crate::Adoptable::adopt) does explicit bookkeeping to
-    /// store links to adoptee `Rc`s. These links form a graph of reachable
-    /// objects which are used to detect cycles.
+    /// [`Rc::adopt`] does explicit bookkeeping to store links to adoptee `Rc`s.
+    /// These links form a graph of reachable objects which are used to detect
+    /// cycles.
+    ///
+    /// [`Rc::adopt`]: crate::Rc::adopt
     ///
     /// On drop, if an `Rc` has no links, it is dropped like a normal `Rc`. If
     /// the `Rc` has links, `Drop` performs a breadth first search by traversing
     /// the forward and backward links stored in each `Rc`. Deallocating cycles
-    /// requires correct use of [`Adoptable::adopt`](crate::Adoptable::adopt)
-    /// and [`Adoptable::unadopt`](crate::Adoptable::unadopt) to perform the
-    /// reachability bookkeeping.
+    /// requires correct use of [`Adopt::adopt`] and [`Adopt::unadopt`] to
+    /// perform the reachability bookkeeping.
+    ///
+    /// [`Adopt::adopt`]: crate::Adopt::adopt
+    /// [`Adopt::unadopt`]: crate::Adopt::unadopt
     ///
     /// After determining all reachable objects, `Rc` reduces the graph to
     /// objects that form a cycle by performing pairwise reachability checks.

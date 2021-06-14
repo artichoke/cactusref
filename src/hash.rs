@@ -1,3 +1,5 @@
+#![allow(clippy::module_name_repetitions)]
+
 use core::hash::BuildHasherDefault;
 
 use rustc_hash::FxHasher;

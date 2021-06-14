@@ -102,42 +102,40 @@
 //!     // ...other fields
 //! }
 //!
-//! fn main() {
-//!     // Create a reference-counted `Owner`.
-//!     let gadget_owner: Rc<Owner> = Rc::new(
-//!         Owner {
-//!             name: "Gadget Man".to_string(),
-//!         }
-//!     );
+//! // Create a reference-counted `Owner`.
+//! let gadget_owner: Rc<Owner> = Rc::new(
+//!     Owner {
+//!         name: "Gadget Man".to_string(),
+//!     }
+//! );
 //!
-//!     // Create `Gadget`s belonging to `gadget_owner`. Cloning the `Rc<Owner>`
-//!     // gives us a new pointer to the same `Owner` allocation, incrementing
-//!     // the reference count in the process.
-//!     let gadget1 = Gadget {
-//!         id: 1,
-//!         owner: Rc::clone(&gadget_owner),
-//!     };
-//!     let gadget2 = Gadget {
-//!         id: 2,
-//!         owner: Rc::clone(&gadget_owner),
-//!     };
+//! // Create `Gadget`s belonging to `gadget_owner`. Cloning the `Rc<Owner>`
+//! // gives us a new pointer to the same `Owner` allocation, incrementing
+//! // the reference count in the process.
+//! let gadget1 = Gadget {
+//!     id: 1,
+//!     owner: Rc::clone(&gadget_owner),
+//! };
+//! let gadget2 = Gadget {
+//!     id: 2,
+//!     owner: Rc::clone(&gadget_owner),
+//! };
 //!
-//!     // Dispose of our local variable `gadget_owner`.
-//!     drop(gadget_owner);
+//! // Dispose of our local variable `gadget_owner`.
+//! drop(gadget_owner);
 //!
-//!     // Despite dropping `gadget_owner`, we're still able to print out the name
-//!     // of the `Owner` of the `Gadget`s. This is because we've only dropped a
-//!     // single `Rc<Owner>`, not the `Owner` it points to. As long as there are
-//!     // other `Rc<Owner>` pointing at the same `Owner` allocation, it will remain
-//!     // live. The field projection `gadget1.owner.name` works because
-//!     // `Rc<Owner>` automatically dereferences to `Owner`.
-//!     println!("Gadget {} owned by {}", gadget1.id, gadget1.owner.name);
-//!     println!("Gadget {} owned by {}", gadget2.id, gadget2.owner.name);
+//! // Despite dropping `gadget_owner`, we're still able to print out the name
+//! // of the `Owner` of the `Gadget`s. This is because we've only dropped a
+//! // single `Rc<Owner>`, not the `Owner` it points to. As long as there are
+//! // other `Rc<Owner>` pointing at the same `Owner` allocation, it will remain
+//! // live. The field projection `gadget1.owner.name` works because
+//! // `Rc<Owner>` automatically dereferences to `Owner`.
+//! println!("Gadget {} owned by {}", gadget1.id, gadget1.owner.name);
+//! println!("Gadget {} owned by {}", gadget2.id, gadget2.owner.name);
 //!
-//!     // At the end of the function, `gadget1` and `gadget2` are destroyed, and
-//!     // with them the last counted references to our `Owner`. Gadget Man now
-//!     // gets destroyed as well.
-//! }
+//! // At the end of the function, `gadget1` and `gadget2` are destroyed, and
+//! // with them the last counted references to our `Owner`. Gadget Man now
+//! // gets destroyed as well.
 //! ```
 //!
 //! If our requirements change, and we also need to be able to traverse from
@@ -173,67 +171,65 @@
 //!     // ...other fields
 //! }
 //!
-//! fn main() {
-//!     // Create a reference-counted `Owner`. Note that we've put the `Owner`'s
-//!     // vector of `Gadget`s inside a `RefCell` so that we can mutate it through
-//!     // a shared reference.
-//!     let gadget_owner: Rc<Owner> = Rc::new(
-//!         Owner {
-//!             name: "Gadget Man".to_string(),
-//!             gadgets: RefCell::new(vec![]),
-//!         }
-//!     );
-//!
-//!     // Create `Gadget`s belonging to `gadget_owner`, as before.
-//!     let gadget1 = Rc::new(
-//!         Gadget {
-//!             id: 1,
-//!             owner: Rc::clone(&gadget_owner),
-//!         }
-//!     );
-//!     let gadget2 = Rc::new(
-//!         Gadget {
-//!             id: 2,
-//!             owner: Rc::clone(&gadget_owner),
-//!         }
-//!     );
-//!
-//!     // Add the `Gadget`s to their `Owner`.
-//!     {
-//!         let mut gadgets = gadget_owner.gadgets.borrow_mut();
-//!         gadgets.push(Rc::downgrade(&gadget1));
-//!         gadgets.push(Rc::downgrade(&gadget2));
-//!
-//!         // `RefCell` dynamic borrow ends here.
+//! // Create a reference-counted `Owner`. Note that we've put the `Owner`'s
+//! // vector of `Gadget`s inside a `RefCell` so that we can mutate it through
+//! // a shared reference.
+//! let gadget_owner: Rc<Owner> = Rc::new(
+//!     Owner {
+//!         name: "Gadget Man".to_string(),
+//!         gadgets: RefCell::new(vec![]),
 //!     }
+//! );
 //!
-//!     // Iterate over our `Gadget`s, printing their details out.
-//!     for gadget_weak in gadget_owner.gadgets.borrow().iter() {
-//!
-//!         // `gadget_weak` is a `Weak<Gadget>`. Since `Weak` pointers can't
-//!         // guarantee the allocation still exists, we need to call
-//!         // `upgrade`, which returns an `Option<Rc<Gadget>>`.
-//!         //
-//!         // In this case we know the allocation still exists, so we simply
-//!         // `unwrap` the `Option`. In a more complicated program, you might
-//!         // need graceful error handling for a `None` result.
-//!
-//!         let gadget = gadget_weak.upgrade().unwrap();
-//!         println!("Gadget {} owned by {}", gadget.id, gadget.owner.name);
+//! // Create `Gadget`s belonging to `gadget_owner`, as before.
+//! let gadget1 = Rc::new(
+//!     Gadget {
+//!         id: 1,
+//!         owner: Rc::clone(&gadget_owner),
 //!     }
+//! );
+//! let gadget2 = Rc::new(
+//!     Gadget {
+//!         id: 2,
+//!         owner: Rc::clone(&gadget_owner),
+//!     }
+//! );
 //!
-//!     // At the end of the function, `gadget_owner`, `gadget1`, and `gadget2`
-//!     // are destroyed. There are now no strong (`Rc`) pointers to the
-//!     // gadgets, so they are destroyed. This zeroes the reference count on
-//!     // Gadget Man, so he gets destroyed as well.
+//! // Add the `Gadget`s to their `Owner`.
+//! {
+//!     let mut gadgets = gadget_owner.gadgets.borrow_mut();
+//!     gadgets.push(Rc::downgrade(&gadget1));
+//!     gadgets.push(Rc::downgrade(&gadget2));
+//!
+//!     // `RefCell` dynamic borrow ends here.
 //! }
+//!
+//! // Iterate over our `Gadget`s, printing their details out.
+//! for gadget_weak in gadget_owner.gadgets.borrow().iter() {
+//!
+//!     // `gadget_weak` is a `Weak<Gadget>`. Since `Weak` pointers can't
+//!     // guarantee the allocation still exists, we need to call
+//!     // `upgrade`, which returns an `Option<Rc<Gadget>>`.
+//!     //
+//!     // In this case we know the allocation still exists, so we simply
+//!     // `unwrap` the `Option`. In a more complicated program, you might
+//!     // need graceful error handling for a `None` result.
+//!
+//!     let gadget = gadget_weak.upgrade().unwrap();
+//!     println!("Gadget {} owned by {}", gadget.id, gadget.owner.name);
+//! }
+//!
+//! // At the end of the function, `gadget_owner`, `gadget1`, and `gadget2`
+//! // are destroyed. There are now no strong (`Rc`) pointers to the
+//! // gadgets, so they are destroyed. This zeroes the reference count on
+//! // Gadget Man, so he gets destroyed as well.
 //! ```
 //!
 //! [clone]: Clone::clone
 //! [`Cell`]: core::cell::Cell
 //! [`RefCell`]: core::cell::RefCell
 //! [send]: core::marker::Send
-//! [arc]: crate::sync::Arc
+//! [arc]: std::sync::Arc
 //! [`Deref`]: core::ops::Deref
 //! [downgrade]: Rc::downgrade
 //! [upgrade]: Weak::upgrade
@@ -280,7 +276,11 @@ impl<T> RcBox<T> {
     /// Callers must ensure this `RcBox` is not dead.
     #[inline]
     pub(crate) unsafe fn links(&self) -> &RefCell<Links<T>> {
-        mem::transmute(&self.links)
+        let links = &self.links;
+        // SAFETY: because callers have ensured the `RcBox` is not dead, `links`
+        // has not yet been deallocated and the `MaybeUninit` is inhabited.
+        let pointer_to_links = links as *const MaybeUninit<RefCell<Links<T>>>;
+        &*(pointer_to_links.cast::<RefCell<Links<T>>>())
     }
 }
 
@@ -392,7 +392,7 @@ impl<T> Rc<T> {
             Rc::from_ptr(Rc::allocate_for_layout(
                 Layout::new::<T>(),
                 |layout| Global.allocate(layout),
-                |mem| mem as *mut RcBox<MaybeUninit<T>>,
+                |mem| mem.cast::<RcBox<MaybeUninit<T>>>(),
             ))
         }
     }
@@ -422,6 +422,11 @@ impl<T> Rc<T> {
     /// let _y = Rc::clone(&x);
     /// assert_eq!(*Rc::try_unwrap(x).unwrap_err(), 4);
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// If the given `Rc` does not have exactly one strong reference, it is
+    /// returned in the `Err` variant of the returned `Result`.
     #[inline]
     pub fn try_unwrap(this: Self) -> Result<T, Self> {
         if Rc::strong_count(&this) == 1 {
@@ -534,7 +539,12 @@ impl<T> Rc<T> {
         // SAFETY: This cannot go through Deref::deref or Rc::inner because
         // this is required to retain raw/mut provenance such that e.g. `get_mut` can
         // write through the pointer after the Rc is recovered through `from_raw`.
-        unsafe { mem::transmute(ptr::addr_of_mut!((*ptr).value)) }
+        unsafe {
+            // SAFETY: we can cast the `MaybeUninit<T>` to a `T` because we are
+            // calling and associated function with a live `Rc`. If an `Rc` is
+            // not dead, the inner `MaybeUninit` is inhabited.
+            ptr::addr_of_mut!((*ptr).value).cast::<T>()
+        }
     }
 
     /// Constructs an `Rc<T>` from a raw pointer.
@@ -574,6 +584,11 @@ impl<T> Rc<T> {
     ///
     /// // The memory was freed when `x` went out of scope above, so `x_ptr` is now dangling!
     /// ```
+    ///
+    /// # Safety
+    ///
+    /// Callers must ensure that `ptr` points to a live `Rc` and was created
+    /// with a call to [`Rc::into_raw`].
     pub unsafe fn from_raw(ptr: *const T) -> Self {
         let offset = data_offset(ptr);
 
@@ -778,12 +793,18 @@ impl<T> Rc<T> {
     /// ```
     #[inline]
     pub unsafe fn get_mut_unchecked(this: &mut Self) -> &mut T {
+        debug_assert!(!this.inner().is_dead());
         // We are careful to *not* create a reference covering the "count" fields, as
         // this would conflict with accesses to the reference counts (e.g. by `Weak`).
         //
         // Safety: If we have an `Rc`, then the allocation is not dead so the `MaybeUninit`
         // is inhabited.
-        mem::transmute(&mut (*this.ptr.as_ptr()).value)
+        let value = &mut (*this.ptr.as_ptr()).value;
+        // SAFETY: we can cast the `MaybeUninit<T>` to a `T` because we are
+        // calling and associated function with a live `Rc`. If an `Rc` is not
+        // dead, the inner `MaybeUninit` is inhabited.
+        let pointer_to_value = (value as *mut MaybeUninit<T>).cast::<T>();
+        &mut *(pointer_to_value)
     }
 
     /// Returns `true` if the two `Rc`s point to the same allocation
@@ -889,7 +910,14 @@ impl<T: Clone> Rc<T> {
         // reference count is guaranteed to be 1 at this point, and we required
         // the `Rc<T>` itself to be `mut`, so we're returning the only possible
         // reference to the allocation.
-        unsafe { mem::transmute(&mut this.ptr.as_mut().value) }
+        unsafe {
+            let value = &mut this.ptr.as_mut().value;
+            // SAFETY: we can cast the `MaybeUninit<T>` to a `T` because we are
+            // calling and associated function with a live `Rc`. If an `Rc` is
+            // not dead, the inner `MaybeUninit` is inhabited.
+            let pointer_to_value = (value as *mut MaybeUninit<T>).cast::<T>();
+            &mut *(pointer_to_value)
+        }
     }
 }
 
@@ -970,15 +998,15 @@ impl<T> Rc<T> {
     fn from_box(v: Box<T>) -> Rc<T> {
         unsafe {
             let (box_unique, alloc) = Box::into_unique(v);
-            let bptr = box_unique.as_ptr();
+            let box_ptr = box_unique.as_ptr();
 
-            let value_size = mem::size_of_val(&*bptr);
-            let ptr = Self::allocate_for_ptr(bptr);
+            let value_size = mem::size_of_val(&*box_ptr);
+            let ptr = Self::allocate_for_ptr(box_ptr);
 
             // Copy value as bytes
             ptr::copy_nonoverlapping(
-                bptr as *const T as *const u8,
-                &mut (*ptr).value as *mut _ as *mut u8,
+                (box_ptr as *const T).cast::<u8>(),
+                (&mut (*ptr).value as *mut MaybeUninit<T>).cast::<u8>(),
                 value_size,
             );
 
@@ -995,7 +1023,14 @@ impl<T> Deref for Rc<T> {
 
     #[inline(always)]
     fn deref(&self) -> &T {
-        unsafe { mem::transmute(&self.inner().value) }
+        unsafe {
+            let value = &self.inner().value;
+            // SAFETY: we can cast the `MaybeUninit<T>` to a `T` because we are
+            // calling and associated function with a live `Rc`. If an `Rc` is
+            // not dead, the inner `MaybeUninit` is inhabited.
+            let pointer_to_value = (value as *const MaybeUninit<T>).cast::<T>();
+            &*(pointer_to_value)
+        }
     }
 }
 
@@ -1363,7 +1398,7 @@ impl<T> Weak<T> {
 }
 
 pub(crate) fn is_dangling<T: ?Sized>(ptr: *mut T) -> bool {
-    let address = ptr as *mut () as usize;
+    let address = ptr.cast::<()>() as usize;
     address == usize::MAX
 }
 
@@ -1415,7 +1450,7 @@ impl<T> Weak<T> {
             //
             // SAFETY: Because we are a live `Rc`, the `MaybeUninit` `value` is
             // inhabited and can be transmuted to an initialized `T`.
-            unsafe { mem::transmute(ptr::addr_of_mut!((*ptr).value)) }
+            unsafe { ptr::addr_of_mut!((*ptr).value) as *const T }
         }
     }
 
