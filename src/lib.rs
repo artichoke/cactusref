@@ -58,6 +58,7 @@
 //! - [`std::rc::Rc::downcast`](std::rc::Rc::downcast)
 //! - [`CoerceUnsized`](core::ops::CoerceUnsized)
 //! - [`DispatchFromDyn`](core::ops::DispatchFromDyn)
+//! - `From<Cow<'_, T>>`
 //!
 //! CactusRef cannot be used with unsized types like `[T]` or `str`.
 //!

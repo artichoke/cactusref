@@ -251,7 +251,6 @@ use core::ptr::{self, NonNull, Unique};
 
 use alloc::alloc::handle_alloc_error;
 use alloc::alloc::{AllocError, Allocator, Global, Layout};
-use alloc::borrow::{Cow, ToOwned};
 use alloc::boxed::Box;
 
 use crate::link::Links;
@@ -1286,32 +1285,6 @@ impl<T> From<Box<T>> for Rc<T> {
     #[inline]
     fn from(v: Box<T>) -> Rc<T> {
         Rc::from_box(v)
-    }
-}
-
-impl<'a, B> From<Cow<'a, B>> for Rc<B>
-where
-    B: ToOwned,
-    Rc<B>: From<&'a B> + From<B::Owned>,
-{
-    /// Create a reference-counted pointer from
-    /// a clone-on-write pointer by copying its content.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// # use cactusref::Rc;
-    /// # use std::borrow::Cow;
-    /// let cow: Cow<str> = Cow::Borrowed("eggplant");
-    /// let shared: Rc<str> = Rc::from(cow);
-    /// assert_eq!("eggplant", &shared[..]);
-    /// ```
-    #[inline]
-    fn from(cow: Cow<'a, B>) -> Rc<B> {
-        match cow {
-            Cow::Borrowed(s) => Rc::from(s),
-            Cow::Owned(s) => Rc::from(s),
-        }
     }
 }
 
