@@ -38,7 +38,7 @@
 //! functions, called using [fully qualified syntax]:
 //!
 //! ```
-//! use std::rc::Rc;
+//! use cactusref::Rc;
 //!
 //! let my_rc = Rc::new(());
 //! Rc::downgrade(&my_rc);
@@ -49,7 +49,7 @@
 //! while others prefer using method-call syntax.
 //!
 //! ```
-//! use std::rc::Rc;
+//! use cactusref::Rc;
 //!
 //! let rc = Rc::new(());
 //! // Method-call syntax
@@ -67,7 +67,7 @@
 //! is done using the `Clone` trait implemented for [`Rc<T>`][`Rc`] and [`Weak<T>`][`Weak`].
 //!
 //! ```
-//! use std::rc::Rc;
+//! use cactusref::Rc;
 //!
 //! let foo = Rc::new(vec![1.0, 2.0, 3.0]);
 //! // The two syntaxes below are equivalent.
@@ -89,7 +89,7 @@
 //! and have the `Owner` remain allocated as long as any `Gadget` points at it.
 //!
 //! ```
-//! use std::rc::Rc;
+//! use cactusref::Rc;
 //!
 //! struct Owner {
 //!     name: String,
@@ -155,8 +155,8 @@
 //! [`RefCell`] enforces Rust's borrowing rules at runtime.
 //!
 //! ```
-//! use std::rc::Rc;
-//! use std::rc::Weak;
+//! use cactusref::Rc;
+//! use cactusref::Weak;
 //! use std::cell::RefCell;
 //!
 //! struct Owner {
@@ -345,7 +345,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     /// ```
@@ -370,10 +370,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(new_uninit)]
-    /// #![feature(get_mut_unchecked)]
-    ///
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let mut five = Rc::<u32>::new_uninit();
     ///
@@ -413,7 +410,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let x = Rc::new(3);
     /// assert_eq!(Rc::try_unwrap(x), Ok(3));
@@ -467,10 +464,7 @@ impl<T> Rc<MaybeUninit<T>> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(new_uninit)]
-    /// #![feature(get_mut_unchecked)]
-    ///
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let mut five = Rc::<u32>::new_uninit();
     ///
@@ -501,7 +495,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let x = Rc::new("hello".to_owned());
     /// let x_ptr = Rc::into_raw(x);
@@ -524,7 +518,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let x = Rc::new("hello".to_owned());
     /// let y = Rc::clone(&x);
@@ -569,7 +563,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let x = Rc::new("hello".to_owned());
     /// let x_ptr = Rc::into_raw(x);
@@ -603,7 +597,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -625,7 +619,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     /// let _weak_five = Rc::downgrade(&five);
@@ -643,7 +637,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     /// let _also_five = Rc::clone(&five);
@@ -668,7 +662,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -705,7 +699,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -746,7 +740,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let mut x = Rc::new(3);
     /// *Rc::get_mut(&mut x).unwrap() = 4;
@@ -781,9 +775,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(get_mut_unchecked)]
-    ///
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let mut x = Rc::new(String::new());
     /// unsafe {
@@ -813,7 +805,7 @@ impl<T> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     /// let same_five = Rc::clone(&five);
@@ -849,7 +841,7 @@ impl<T: Clone> Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let mut data = Rc::new(5);
     ///
@@ -867,7 +859,7 @@ impl<T: Clone> Rc<T> {
     /// [`Weak`] pointers will be disassociated:
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let mut data = Rc::new(75);
     /// let weak = Rc::downgrade(&data);
@@ -1043,7 +1035,7 @@ impl<T> Clone for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1062,7 +1054,7 @@ impl<T: Default> Default for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let x: Rc<i32> = Default::default();
     /// assert_eq!(*x, 0);
@@ -1086,7 +1078,7 @@ impl<T: PartialEq> PartialEq for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1108,7 +1100,7 @@ impl<T: PartialEq> PartialEq for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1131,7 +1123,7 @@ impl<T: PartialOrd> PartialOrd for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     /// use std::cmp::Ordering;
     ///
     /// let five = Rc::new(5);
@@ -1150,7 +1142,7 @@ impl<T: PartialOrd> PartialOrd for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1168,7 +1160,7 @@ impl<T: PartialOrd> PartialOrd for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1186,7 +1178,7 @@ impl<T: PartialOrd> PartialOrd for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1204,7 +1196,7 @@ impl<T: PartialOrd> PartialOrd for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1224,7 +1216,7 @@ impl<T: Ord> Ord for Rc<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     /// use std::cmp::Ordering;
     ///
     /// let five = Rc::new(5);
@@ -1269,7 +1261,7 @@ impl<T> From<T> for Rc<T> {
     ///
     /// # Example
     /// ```rust
-    /// # use std::rc::Rc;
+    /// # use cactusref::Rc;
     /// let x = 5;
     /// let rc = Rc::new(5);
     ///
@@ -1286,7 +1278,7 @@ impl<T> From<Box<T>> for Rc<T> {
     /// # Example
     ///
     /// ```
-    /// # use std::rc::Rc;
+    /// # use cactusref::Rc;
     /// let original: Box<i32> = Box::new(1);
     /// let shared: Rc<i32> = Rc::from(original);
     /// assert_eq!(1, *shared);
@@ -1308,7 +1300,7 @@ where
     /// # Example
     ///
     /// ```rust
-    /// # use std::rc::Rc;
+    /// # use cactusref::Rc;
     /// # use std::borrow::Cow;
     /// let cow: Cow<str> = Cow::Borrowed("eggplant");
     /// let shared: Rc<str> = Rc::from(cow);
@@ -1383,7 +1375,7 @@ impl<T> Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Weak;
+    /// use cactusref::Weak;
     ///
     /// let empty: Weak<i64> = Weak::new();
     /// assert!(empty.upgrade().is_none());
@@ -1418,7 +1410,7 @@ impl<T> Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     /// use std::ptr;
     ///
     /// let strong = Rc::new("hello".to_owned());
@@ -1466,7 +1458,7 @@ impl<T> Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::{Rc, Weak};
+    /// use cactusref::{Rc, Weak};
     ///
     /// let strong = Rc::new("hello".to_owned());
     /// let weak = Rc::downgrade(&strong);
@@ -1509,7 +1501,7 @@ impl<T> Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::{Rc, Weak};
+    /// use cactusref::{Rc, Weak};
     ///
     /// let strong = Rc::new("hello".to_owned());
     ///
@@ -1560,7 +1552,7 @@ impl<T> Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let five = Rc::new(5);
     ///
@@ -1651,7 +1643,7 @@ impl<T> Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Rc;
+    /// use cactusref::Rc;
     ///
     /// let first_rc = Rc::new(5);
     /// let first = Rc::downgrade(&first_rc);
@@ -1668,7 +1660,7 @@ impl<T> Weak<T> {
     /// Comparing `Weak::new`.
     ///
     /// ```
-    /// use std::rc::{Rc, Weak};
+    /// use cactusref::{Rc, Weak};
     ///
     /// let first = Weak::new();
     /// let second = Weak::new();
@@ -1693,7 +1685,7 @@ unsafe impl<#[may_dangle] T> Drop for Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::{Rc, Weak};
+    /// use cactusref::{Rc, Weak};
     ///
     /// struct Foo;
     ///
@@ -1736,7 +1728,7 @@ impl<T> Clone for Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::{Rc, Weak};
+    /// use cactusref::{Rc, Weak};
     ///
     /// let weak_five = Rc::downgrade(&Rc::new(5));
     ///
@@ -1770,7 +1762,7 @@ impl<T> Default for Weak<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::rc::Weak;
+    /// use cactusref::Weak;
     ///
     /// let empty: Weak<i64> = Default::default();
     /// assert!(empty.upgrade().is_none());
