@@ -128,7 +128,7 @@ drop(right);
 CactusRef is licensed with the [MIT License](LICENSE) (c) Ryan Lopopolo.
 
 CactusRef is derived from `Rc` in the Rust standard library @
-[`f586d79d`][alloc-rc-snapshot]. which is dual licensed with the [MIT
+[`f586d79d`][alloc-rc-snapshot] which is dual licensed with the [MIT
 License][rust-mit-license] and [Apache 2.0 License][rust-apache2-license].
 
 [alloc-rc-snapshot]:
