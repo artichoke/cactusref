@@ -1,6 +1,5 @@
 #![feature(
     allocator_api,
-    alloc_layout_extra,
     core_intrinsics,
     dropck_eyepatch,
     layout_for_ptr,
