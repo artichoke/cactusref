@@ -10,7 +10,7 @@ struct RString {
 }
 
 #[test]
-fn leak_adopt_self() {
+fn adopt_self_noop() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
     log::info!("adopt self");
@@ -21,19 +21,17 @@ fn leak_adopt_self() {
         inner: s.clone(),
         link: None,
     }));
-    let clone = Rc::clone(&first);
     unsafe {
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
+        Rc::adopt(&first, &first);
     }
-    first.borrow_mut().link = Some(clone);
     assert_eq!(first.borrow().inner, s);
-    assert!(first.borrow().link.is_some());
+    assert!(first.borrow().link.is_none());
     drop(first);
 }

@@ -1,7 +1,7 @@
-#![deny(clippy::all, clippy::pedantic)]
-#![deny(warnings, intra_doc_link_resolution_failure)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 
-use cactusref::{Adoptable, Rc};
+use cactusref::{Adopt, Rc};
 use std::cell::RefCell;
 
 #[derive(Default)]
@@ -26,10 +26,10 @@ fn weak() {
 
     let weak = Rc::downgrade(&array);
     assert!(weak.upgrade().is_some());
-    assert_eq!(weak.weak_count(), Some(1));
+    assert_eq!(weak.weak_count(), 1);
     assert_eq!(weak.upgrade().as_ref().map(Rc::strong_count), Some(12));
     assert_eq!(weak.strong_count(), 11);
-    assert_eq!(weak.weak_count(), Some(1));
+    assert_eq!(weak.weak_count(), 1);
     assert_eq!(weak.upgrade().unwrap().borrow().buffer.len(), 10);
 
     // 1 for the array binding, 10 for the `Rc`s in buffer, and 10
@@ -38,6 +38,7 @@ fn weak() {
 
     drop(array);
 
+    assert_eq!(weak.strong_count(), 0);
+    assert_eq!(weak.weak_count(), 0);
     assert!(weak.upgrade().is_none());
-    assert_eq!(weak.weak_count(), Some(1));
 }

@@ -1,202 +1,139 @@
-# 🌵 `CactusRef`
+# CactusRef
+
+[![GitHub Actions](https://github.com/artichoke/cactusref/workflows/CI/badge.svg)](https://github.com/artichoke/cactusref/actions)
+[![Discord](https://img.shields.io/discord/607683947496734760)](https://discord.gg/QCe2tp2)
+[![Twitter](https://img.shields.io/twitter/follow/artichokeruby?label=Follow&style=social)](https://twitter.com/artichokeruby)
+<br>
+[![Crate](https://img.shields.io/crates/v/cactusref.svg)](https://crates.io/crates/cactusref)
+[![API](https://docs.rs/cactusref/badge.svg)](https://docs.rs/cactusref)
+[![API trunk](https://img.shields.io/badge/docs-trunk-blue.svg)](https://artichoke.github.io/cactusref/cactusref/)
 
 Single-threaded, cycle-aware, reference-counting pointers. 'Rc' stands for
 'Reference Counted'.
 
-[![CircleCI](https://circleci.com/gh/artichoke/cactusref.svg?style=svg)](https://circleci.com/gh/artichoke/cactusref)
-[![Documentation](https://img.shields.io/badge/docs-cactusref-blue.svg)](https://artichoke.github.io/cactusref/cactusref/)
+> What if, hear me out, we put a hash map in a smart pointer?
 
-The type
-[`Rc<T>`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
-provides shared ownership of a value of type `T`, allocated in the heap.
-Invoking
-[`clone`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html#impl-Clone)
-on [`Rc`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
-produces a new pointer to the same value in the heap. When the last externally
-reachable [`Rc`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html)
-pointer to a given value is destroyed, the pointed-to value is also destroyed.
+CactusRef is a single-threaded, reference-counted smart pointer that can
+deallocate cycles without having to resort to weak pointers. [`Rc`][std-rc] from
+`std` can be difficult to work with because creating a cycle of `Rc`s will
+result in a memory leak.
 
-`Rc` can **detect and deallocate cycles** of `Rc`s through the use of
-[`Adoptable`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html).
-Cycle detection is a zero-cost abstraction.
+[std-rc]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html
 
-🌌 `CactusRef` depends on _several_ unstable Rust features and can only be built
-on nightly. `CactusRef` implements
-[`std::rc`](https://doc.rust-lang.org/std/rc/index.html)'s pinning APIs which
-requires at least Rust 1.33.0.
+CactusRef is a near drop-in replacement for `std::rc::Rc` which introduces
+additional APIs for bookkeeping ownership relationships in a graph of `Rc`s.
 
-## `CactusRef` vs. `std::rc`
+Combining CactusRef's [adoption APIs] for tracking links in the object graph and
+driving garbage collection with Rust's [drop glue] implements a kind of tracing
+garbage collector. Graphs of CactusRefs detect cycles local to the graph of
+connected CactusRefs and do not need to scan the whole heap as is [typically
+required][rust-tour-tracing-gc] in a tracing garbage collector.
 
-The `Rc` in `CactusRef` is derived from
-[`std::rc::Rc`](https://doc.rust-lang.org/std/rc/struct.Rc.html) and `CactusRef`
-implements most of the API from `std`.
+Cycles of CactusRefs are deterministically collected and deallocated when they
+are no longer reachable from outside of the cycle.
 
-`cactusref::Rc` does not implement the following APIs that are present on
-[`rc::Rc`](https://doc.rust-lang.org/std/rc/struct.Rc.html):
+[adoption apis]:
+  https://artichoke.github.io/cactusref/cactusref/trait.Adopt.html
+[drop glue]: https://doc.rust-lang.org/nightly/reference/destructors.html
+[rust-tour-tracing-gc]:
+  https://manishearth.github.io/blog/2021/04/05/a-tour-of-safe-tracing-gc-designs-in-rust/
 
-- [`std::rc::Rc::downcast`](https://doc.rust-lang.org/std/rc/struct.Rc.html#method.downcast)
-- [`CoerceUnsized`](https://doc.rust-lang.org/nightly/core/ops/trait.CoerceUnsized.html)
-- [`DispatchFromDyn`](https://doc.rust-lang.org/nightly/core/ops/trait.DispatchFromDyn.html)
+## Self-referential Data Structures
 
-If you do not depend on these APIs, `cactusref` is a drop-in replacement for
-[`std::rc`](https://doc.rust-lang.org/std/rc/index.html).
+CactusRef can be used to implement [self-referential data structures] such as a
+doubly-linked list without using weak references.
 
-Like [`std::rc`](https://doc.rust-lang.org/std/rc/index.html),
-[`Rc`](https://artichoke.github.io/cactusref/cactusref/struct.Rc.html) and
-[`Weak`](https://artichoke.github.io/cactusref/cactusref/struct.Weak.html) are
-`!`[`Send`](https://doc.rust-lang.org/nightly/core/marker/trait.Send.html) and
-`!`[`Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html).
+[self-referential data structures]:
+  https://artichoke.github.io/cactusref/cactusref/implementing_self_referential_data_structures/index.html
 
-## ⚠️ Safety
+## Usage
 
-`CactusRef` relies on proper use of
-[`Adoptable::adopt`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html#method.adopt)
-and
-[`Adoptable::unadopt`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html#method.unadopt)
-to maintain bookkeeping about the object graph for breaking cycles. These
-functions are unsafe because improperly managing the bookkeeping can cause the
-`Rc` `Drop` implementation to deallocate cycles while they are still externally
-reachable. All held `Rc`s that point to members of the now deallocated cycle
-will dangle.
+Add this to your `Cargo.toml`:
 
-`CactusRef` makes a best-effort attempt to abort the program if an access to a
-dangling `Rc` occurs.
+```toml
+[dependencies]
+cactusref = "0.1"
+```
 
-## Cycle Detection
-
-`Rc` implements
-[`Adoptable`](https://artichoke.github.io/cactusref/cactusref/trait.Adoptable.html)
-to log bookkeeping entries for strong ownership links to other `Rc`s that may
-form a cycle. The ownership links tracked by these bookkeeping entries form an
-object graph of reachable `Rc`s. On `drop`, `Rc` uses these entries to conduct a
-reachability trace of the object graph to determine if it is part of an
-_orphaned cycle_. An orphaned cycle is a cycle where the only strong references
-to all nodes in the cycle come from other nodes in the cycle.
-
-Cycle detection is a zero-cost abstraction. If you never
-`use cactusref::Adoptable;`, `Drop` uses the same implementation as
-`std::rc::Rc` (and leaks in the same way as `std::rc::Rc` if you form a cycle of
-strong references). The only costs you pay are the memory costs of one empty
-[`RefCell`](https://doc.rust-lang.org/nightly/core/cell/struct.RefCell.html)`<`[`HashMap`](https://docs.rs/hashbrown/0.5.0/hashbrown/struct.HashMap.html)`<NonNull<T>, usize>>`
-for tracking adoptions and an if statement to check if these structures are
-empty on `drop`.
-
-Cycle detection uses breadth-first search for traversing the object graph. The
-algorithm supports arbitrarily large object graphs and will not overflow the
-stack during the reachability trace.
-
-## Self-Referential Structures
-
-`CactusRef` can be used to implement collections that own strong references to
-themselves. The following implements a doubly-linked list that is fully
-deallocated once the `list` binding is dropped.
+CactusRef is mostly a drop-in replacement for `std::rc::Rc`, which can be used
+like:
 
 ```rust
-use cactusref::{Adoptable, Rc};
+use cactusref::Rc;
+
+let node = Rc::new(123_i32);
+let another = Rc::clone(&node);
+assert_eq!(Rc::strong_count(&another), 2);
+
+let weak = Rc::downgrade(&node);
+assert!(weak.upgrade().is_some());
+```
+
+Or start making self-referential data structures like:
+
+```rust
 use std::cell::RefCell;
-use std::iter;
+use cactusref::{Adopt, Rc};
 
-struct Node<T> {
-    pub prev: Option<Rc<RefCell<Self>>>,
-    pub next: Option<Rc<RefCell<Self>>>,
-    pub data: T,
+struct Node {
+    next: Option<Rc<RefCell<Node>>>,
+    data: i32,
 }
 
-struct List<T> {
-    pub head: Option<Rc<RefCell<Node<T>>>>,
+let left = Node { next: None, data: 123 };
+let left = Rc::new(RefCell::new(left));
+
+let right = Node { next: Some(Rc::clone(&left)), data: 456 };
+let right = Rc::new(RefCell::new(right));
+
+unsafe {
+    // bookkeep that `right` has added an owning ref to `left`.
+    Rc::adopt(&right, &left);
 }
 
-impl<T> List<T> {
-    fn pop(&mut self) -> Option<Rc<RefCell<Node<T>>>> {
-        let head = self.head.take()?;
-        let tail = head.borrow_mut().prev.take();
-        let next = head.borrow_mut().next.take();
-        if let Some(ref tail) = tail {
-            unsafe {
-                Rc::unadopt(&head, &tail);
-                Rc::unadopt(&tail, &head);
-            }
-            tail.borrow_mut().next = next.as_ref().map(Rc::clone);
-            if let Some(ref next) = next {
-                unsafe {
-                    Rc::adopt(tail, next);
-                }
-            }
-        }
-        if let Some(ref next) = next {
-            unsafe {
-                Rc::unadopt(&head, &next);
-                Rc::unadopt(&next, &head);
-            }
-            next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
-            if let Some(ref tail) = tail {
-                unsafe {
-                    Rc::adopt(next, tail);
-                }
-            }
-        }
-        self.head = next;
-        Some(head)
-    }
+left.borrow_mut().next = Some(Rc::clone(&right));
+
+unsafe {
+    // bookkeep that `left` has added an owning ref to `right`.
+    Rc::adopt(&left, &right);
 }
 
-impl<T> From<Vec<T>> for List<T> {
-    fn from(list: Vec<T>) -> Self {
-        let nodes = list
-            .into_iter()
-            .map(|data| {
-                Rc::new(RefCell::new(Node {
-                    prev: None,
-                    next: None,
-                    data,
-                }))
-            })
-            .collect::<Vec<_>>();
-        for i in 0..nodes.len() - 1 {
-            let curr = &nodes[i];
-            let next = &nodes[i + 1];
-            curr.borrow_mut().next = Some(Rc::clone(next));
-            next.borrow_mut().prev = Some(Rc::clone(curr));
-            unsafe {
-                Rc::adopt(curr, next);
-                Rc::adopt(next, curr);
-            }
-        }
-        let tail = &nodes[nodes.len() - 1];
-        let head = &nodes[0];
-        tail.borrow_mut().next = Some(Rc::clone(head));
-        head.borrow_mut().prev = Some(Rc::clone(tail));
-        unsafe {
-            Rc::adopt(tail, head);
-            Rc::adopt(head, tail);
-        }
-
-        let head = Rc::clone(head);
-        Self { head: Some(head) }
-    }
+let mut node = Rc::clone(&left);
+// this loop will print:
+//
+// > traversing ring and found node with data = 123
+// > traversing ring and found node with data = 456
+// > traversing ring and found node with data = 123
+// > traversing ring and found node with data = 456
+// > traversing ring and found node with data = 123
+for _ in 0..5 {
+    println!("traversing ring and found node with data = {}", node.borrow().data);
+    let next = if let Some(ref next) = node.borrow().next {
+        Rc::clone(next)
+    } else {
+        break;
+    };
+    node = next;
 }
+assert_eq!(Rc::strong_count(&node), 3);
+drop(node);
 
-let list = iter::repeat(())
-    .map(|_| "a".repeat(1024 * 1024))
-    .take(10)
-    .collect::<Vec<_>>();
-let mut list = List::from(list);
-let head = list.pop().unwrap();
-assert_eq!(Rc::strong_count(&head), 1);
-assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
-let weak = Rc::downgrade(&head);
-drop(head);
-assert!(weak.upgrade().is_none());
-drop(list);
-// all memory consumed by the list nodes is reclaimed.
+drop(left);
+drop(right);
+// All members of the ring are garbage collected and deallocated.
 ```
 
 ## License
 
-CactusRef is licensed with the [MIT License](/LICENSE) (c) Ryan Lopopolo.
+CactusRef is licensed with the [MIT License](LICENSE) (c) Ryan Lopopolo.
 
 CactusRef is derived from `Rc` in the Rust standard library @
-[`296e825`](https://github.com/rust-lang/rust/blob/296e825afab8665dfc5527aa8f72dfe5f5894224/src/liballoc/rc.rs)
-which is dual licensed with the
-[MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT) and
-[Apache 2.0 License](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE).
+[`f586d79d`][alloc-rc-snapshot]. which is dual licensed with the [MIT
+License][rust-mit-license] and [Apache 2.0 License][rust-apache2-license].
+
+[alloc-rc-snapshot]:
+  https://github.com/rust-lang/rust/blob/f586d79d183d144e0cbf519e29247f36670e2076/library/alloc/src/rc.rs
+[rust-mit-license]:
+  https://github.com/rust-lang/rust/blob/f586d79d183d144e0cbf519e29247f36670e2076/LICENSE-MIT
+[rust-apache2-license]:
+  https://github.com/rust-lang/rust/blob/f586d79d183d144e0cbf519e29247f36670e2076/LICENSE-APACHE

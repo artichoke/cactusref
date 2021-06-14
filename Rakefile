@@ -94,6 +94,11 @@ task :test do
   sh 'cargo test --workspace'
 end
 
+desc 'Run CactusRef unit tests under Miri'
+task :'test:miri' do
+  sh 'cargo miri test --workspace'
+end
+
 namespace :release do
   link_check_files = FileList.new('**/*.md') do |f|
     f.exclude('node_modules/**/*')

@@ -1,0 +1,22 @@
+[package]
+name = "benchmarks"
+version = "0.1.0"
+authors = ["Ryan Lopopolo <rjl@hyperbo.la>"]
+edition = "2018"
+
+[workspace]
+members = ["."]
+
+[[bench]]
+name = "drop"
+harness = false
+
+[dependencies]
+
+[dev-dependencies]
+# Benchmarking support on stable Rust.
+criterion = { version = "0.3", default-features = false, features = ["cargo_bench_support", "html_reports"] }
+# benchmark target
+cactusref = { path = ".." }
+env_logger = { version = "0.8.4", default-features = false }
+log = "0.4.6"

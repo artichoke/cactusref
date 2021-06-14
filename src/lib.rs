@@ -1,205 +1,141 @@
 #![feature(
     allocator_api,
-    alloc_layout_extra,
-    box_into_raw_non_null,
+    core_intrinsics,
     dropck_eyepatch,
-    specialization
+    set_ptr_value,
+    slice_ptr_get
 )]
-#![deny(warnings, intra_doc_link_resolution_failure, missing_docs)]
-#![deny(clippy::all, clippy::pedantic)]
+#![allow(incomplete_features)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::cargo)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::inline_always)]
+#![allow(clippy::option_if_let_else)]
+#![allow(unknown_lints)]
+#![warn(missing_copy_implementations)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
+#![warn(rust_2018_idioms)]
+#![warn(unused_qualifications)]
+#![warn(variant_size_differences)]
 
-//! # 🌵 `CactusRef`
-//!
 //! Single-threaded, cycle-aware, reference-counting pointers. 'Rc' stands
 //! for 'Reference Counted'.
 //!
-//! The type [`Rc<T>`](`Rc`) provides shared ownership of a value of type `T`,
-//! allocated in the heap. Invoking [`clone`](Clone::clone) on [`Rc`] produces a
-//! new pointer to the same value in the heap. When the last externally
-//! reachable [`Rc`] pointer to a given value is destroyed, the pointed-to value
-//! is also destroyed.
+//! The type [`Rc<T>`] provides shared ownership of a value of type `T`,
+//! allocated in the heap. Invoking [`clone`] on [`Rc`] produces a new pointer
+//! to the same value in the heap. When the last externally reachable [`Rc`]
+//! pointer to a given value is destroyed, the pointed-to value is also
+//! destroyed.
+//!
+//! [`Rc<T>`]: crate::Rc
+//! [`clone`]: Clone::clone
 //!
 //! `Rc` can **detect and deallocate cycles** of `Rc`s through the use of
-//! [`Adoptable`]. Cycle detection is a zero-cost abstraction.
+//! [`Adopt`]. Cycle detection is a zero-cost abstraction.
 //!
-//! 🌌 `CactusRef` depends on _several_ unstable Rust features and can only be
-//! built on nightly. `CactusRef` implements `std::rc`'s pinning APIs which
-//! requires at least Rust 1.33.0.
+//! # Nightly
 //!
-//! ## `CactusRef` vs. `std::rc`
+//! CactusRef depends on several unstable Rust features and can only be built
+//! on a nightly toolchain. CactusRef reimplements several compiler internals
+//! from [alloc], which means it is only safe to build CactusRef with the same
+//! nightly compiler as the one pinned in its `rust-toolchain` file.
 //!
-//! The `Rc` in `CactusRef` is derived from [`std::rc::Rc`] and `CactusRef`
+//! [alloc]: https://doc.rust-lang.org/stable/alloc/
+//!
+//! # CactusRef vs. `std::rc`
+//!
+//! The `Rc` in CactusRef is derived from [`std::rc::Rc`] and CactusRef
 //! implements most of the API from `std`.
 //!
-//! `cactusref::Rc` does not implement the following APIs that are present on
-//! [`rc::Rc`](std::rc::Rc):
+//! CactusRef does not implement the following APIs that are present on
+//! [`std::rc::Rc`]:
 //!
 //! - [`std::rc::Rc::downcast`](std::rc::Rc::downcast)
 //! - [`CoerceUnsized`](core::ops::CoerceUnsized)
 //! - [`DispatchFromDyn`](core::ops::DispatchFromDyn)
+//! - `From<Cow<'_, T>>`
 //!
-//! If you do not depend on these APIs, `cactusref` is a drop-in replacement for
-//! [`std::rc`].
+//! CactusRef cannot be used with unsized types like `[T]` or `str`.
 //!
-//! Like [`std::rc`], [`Rc`] and [`Weak`] are `!`[`Send`] and `!`[`Sync`].
+//! If you do not depend on these APIs, CactusRef is a drop-in replacement for
+//! [`std::rc::Rc`].
 //!
-//! ## ⚠️ Safety
+//! Like [`std::rc`], [`Rc`] and [`Weak`] are not `Send` and are not `Sync`.
 //!
-//! `CactusRef` relies on proper use of [`Adoptable::adopt`] and
-//! [`Adoptable::unadopt`] to maintain bookkeeping about the object graph for
-//! breaking cycles. These functions are unsafe because improperly managing the
-//! bookkeeping can cause the `Rc` `Drop` implementation to deallocate cycles
-//! while they are still externally reachable. All held `Rc`s that point to
-//! members of the now deallocated cycle will dangle.
+//! [`std::rc`]: https://doc.rust-lang.org/stable/std/rc/index.html
 //!
-//! `CactusRef` makes a best-effort attempt to abort the program if an access to
-//! a dangling `Rc` occurs.
+//! # Building an object graph
 //!
-//! ## Cycle Detection
+//! CactusRef smart pointers can be used to implement a tracing garbage
+//! collector local to a graph objects. Graphs of CactusRefs are cycle-aware and
+//! can deallocate a cycle of strong references that is otherwise unreachable
+//! from the rest of the object graph, unlike [`std::rc::Rc`].
 //!
-//! `Rc` implements [`Adoptable`] to log bookkeeping entries for strong
-//! ownership links to other `Rc`s that may form a cycle. The ownership links
-//! tracked by these bookkeeping entries form an object graph of reachable
-//! `Rc`s. On `drop`, `Rc` uses these entries to conduct a reachability trace
-//! of the object graph to determine if it is part of an _orphaned cycle_. An
-//! orphaned cycle is a cycle where the only strong references to all nodes in
-//! the cycle come from other nodes in the cycle.
+//! `CactusRef` relies on proper use of [`Adopt::adopt`] and [`Adopt::unadopt`]
+//! to maintain bookkeeping about the object graph for breaking cycles. These
+//! functions are unsafe because improperly managing the bookkeeping can cause
+//! the `Rc` drop implementation to deallocate cycles while they are still
+//! externally reachable. Failure to uphold [`Adopt`]'s safety invariants will
+//! result in *[undefined behavior]* and held `Rc`s that point to members of the
+//! now deallocated cycle may dangle.
+//!
+//! [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+//!
+//! CactusRef makes a best-effort attempt to abort the program if it detects an
+//! access to a dangling `Rc`.
+//!
+//! # Cycle Detection
+//!
+//! `Rc` implements [`Adopt`] to log bookkeeping entries for strong ownership
+//! links to other `Rc`s that may form a cycle. The ownership links tracked by
+//! these bookkeeping entries form an object graph of reachable `Rc`s. On
+//! `drop`, `Rc` uses these entries to conduct a reachability trace of the
+//! object graph to determine if it is part of an _orphaned cycle_. An orphaned
+//! cycle is a cycle where the only strong references to all nodes in the cycle
+//! come from other nodes in the cycle.
 //!
 //! Cycle detection is a zero-cost abstraction. If you never
-//! `use cactusref::Adoptable;`, `Drop` uses the same implementation as
-//! `std::rc::Rc` (and leaks in the same way as `std::rc::Rc` if you form a
+//! `use cactusref::Adopt;`, `drop` uses the same implementation as
+//! [`std::rc::Rc`] (and leaks in the same way as `std::rc::Rc` if you form a
 //! cycle of strong references). The only costs you pay are the memory costs of
-//! one empty
-//! [`RefCell`](std::cell::RefCell)`<`[`HashMap`](hashbrown::HashMap)`<NonNull<T>, usize>>`
-//! for tracking adoptions and an if statement to check if these structures are
-//! empty on `drop`.
+//! one empty hash map used to track adoptions and an if statement to check if
+//! these structures are empty on `drop`.
 //!
 //! Cycle detection uses breadth-first search for traversing the object graph.
 //! The algorithm supports arbitrarily large object graphs and will not overflow
 //! the stack during the reachability trace.
 //!
-//! ## Self-Referential Structures
-//!
-//! `CactusRef` can be used to implement collections that own strong references
-//! to themselves. The following implements a doubly-linked list that is fully
-//! deallocated once the `list` binding is dropped.
-//!
-//! ```rust
-//! use cactusref::{Adoptable, Rc};
-//! use std::cell::RefCell;
-//! use std::iter;
-//!
-//! struct Node<T> {
-//!     pub prev: Option<Rc<RefCell<Self>>>,
-//!     pub next: Option<Rc<RefCell<Self>>>,
-//!     pub data: T,
-//! }
-//!
-//! struct List<T> {
-//!     pub head: Option<Rc<RefCell<Node<T>>>>,
-//! }
-//!
-//! impl<T> List<T> {
-//!     fn pop(&mut self) -> Option<Rc<RefCell<Node<T>>>> {
-//!         let head = self.head.take()?;
-//!         let tail = head.borrow_mut().prev.take();
-//!         let next = head.borrow_mut().next.take();
-//!         if let Some(ref tail) = tail {
-//!             unsafe {
-//!                 Rc::unadopt(&head, &tail);
-//!                 Rc::unadopt(&tail, &head);
-//!             }
-//!             tail.borrow_mut().next = next.as_ref().map(Rc::clone);
-//!             if let Some(ref next) = next {
-//!                 unsafe {
-//!                     Rc::adopt(tail, next);
-//!                 }
-//!             }
-//!         }
-//!         if let Some(ref next) = next {
-//!             unsafe {
-//!                 Rc::unadopt(&head, &next);
-//!                 Rc::unadopt(&next, &head);
-//!             }
-//!             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
-//!             if let Some(ref tail) = tail {
-//!                 unsafe {
-//!                     Rc::adopt(next, tail);
-//!                 }
-//!             }
-//!         }
-//!         self.head = next;
-//!         Some(head)
-//!     }
-//! }
-//!
-//! impl<T> From<Vec<T>> for List<T> {
-//!     fn from(list: Vec<T>) -> Self {
-//!         let nodes = list
-//!             .into_iter()
-//!             .map(|data| {
-//!                 Rc::new(RefCell::new(Node {
-//!                     prev: None,
-//!                     next: None,
-//!                     data,
-//!                 }))
-//!             })
-//!             .collect::<Vec<_>>();
-//!         for i in 0..nodes.len() - 1 {
-//!             let curr = &nodes[i];
-//!             let next = &nodes[i + 1];
-//!             curr.borrow_mut().next = Some(Rc::clone(next));
-//!             next.borrow_mut().prev = Some(Rc::clone(curr));
-//!             unsafe {
-//!                 Rc::adopt(curr, next);
-//!                 Rc::adopt(next, curr);
-//!             }
-//!         }
-//!         let tail = &nodes[nodes.len() - 1];
-//!         let head = &nodes[0];
-//!         tail.borrow_mut().next = Some(Rc::clone(head));
-//!         head.borrow_mut().prev = Some(Rc::clone(tail));
-//!         unsafe {
-//!             Rc::adopt(tail, head);
-//!             Rc::adopt(head, tail);
-//!         }
-//!
-//!         let head = Rc::clone(head);
-//!         Self { head: Some(head) }
-//!     }
-//! }
-//!
-//! let list = iter::repeat(())
-//!     .map(|_| "a".repeat(1024 * 1024))
-//!     .take(10)
-//!     .collect::<Vec<_>>();
-//! let mut list = List::from(list);
-//! let head = list.pop().unwrap();
-//! assert_eq!(Rc::strong_count(&head), 1);
-//! assert_eq!(list.head.as_ref().map(Rc::strong_count), Some(3));
-//! let weak = Rc::downgrade(&head);
-//! drop(head);
-//! assert!(weak.upgrade().is_none());
-//! drop(list);
-//! // all memory consumed by the list nodes is reclaimed.
-//! ```
+//! [`std::rc::Rc`]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html
 
+#![doc(html_root_url = "https://docs.rs/cactusref/0.1.0")]
+
+// Ensure code blocks in README.md compile
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+mod readme {}
+
+extern crate alloc;
 #[macro_use]
 extern crate log;
 
-mod adoptable;
-mod cyclic;
+mod adopt;
+mod cycle;
 mod drop;
+mod hash;
 mod link;
-mod ptr;
 mod rc;
-#[cfg(test)]
-mod tests;
-mod weak;
 
-pub use adoptable::Adoptable;
+// Doc modules
+#[cfg(any(doctest, docsrs))]
+#[path = "doc/implementing_self_referential_data_structures.rs"]
+/// Examples of implementing self-referential data structures with CactusRef.
+pub mod implementing_self_referential_data_structures;
+
+pub use adopt::Adopt;
 pub use rc::Rc;
-pub use weak::Weak;
+pub use rc::Weak;
 
 /// Cactus alias for [`Rc`].
 pub type CactusRef<T> = Rc<T>;

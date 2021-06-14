@@ -1,11 +1,19 @@
-use super::{Rc, Weak};
-use std::boxed::Box;
 use std::cell::RefCell;
-use std::clone::Clone;
-use std::convert::From;
-use std::mem::drop;
-use std::option::Option::{self, None, Some};
-use std::result::Result::{Err, Ok};
+use std::mem::{drop, size_of};
+
+use super::{Rc, RcBox, Weak};
+
+// This test documents the size of `RcBox`, the inner allocation of the `Rc`.
+//
+// Feel free to change this test so it passes, but document in PRs when it
+// changes and why it does.
+#[test]
+fn size_of_rcbox() {
+    #[cfg(target_pointer_width = "64")]
+    assert_eq!(size_of::<RcBox<i32>>(), 64);
+    #[cfg(target_pointer_width = "32")]
+    assert_eq!(size_of::<RcBox<i32>>(), 32);
+}
 
 #[test]
 fn test_clone() {
@@ -48,21 +56,6 @@ fn test_dead() {
     let y = Rc::downgrade(&x);
     drop(x);
     assert!(y.upgrade().is_none());
-}
-
-#[test]
-fn weak_self_cyclic() {
-    struct Cycle {
-        x: RefCell<Option<Weak<Cycle>>>,
-    }
-
-    let a = Rc::new(Cycle {
-        x: RefCell::new(None),
-    });
-    let b = Rc::downgrade(&a.clone());
-    *a.x.borrow_mut() = Some(b);
-
-    // hopefully we don't double-free (or leak)...
 }
 
 #[test]
@@ -115,28 +108,28 @@ fn test_weak_count() {
 
 #[test]
 fn weak_counts() {
-    assert_eq!(Weak::weak_count(&Weak::<u64>::new()), None);
+    assert_eq!(Weak::weak_count(&Weak::<u64>::new()), 0);
     assert_eq!(Weak::strong_count(&Weak::<u64>::new()), 0);
 
     let a = Rc::new(0);
     let w = Rc::downgrade(&a);
     assert_eq!(Weak::strong_count(&w), 1);
-    assert_eq!(Weak::weak_count(&w), Some(1));
+    assert_eq!(Weak::weak_count(&w), 1);
     let w2 = w.clone();
     assert_eq!(Weak::strong_count(&w), 1);
-    assert_eq!(Weak::weak_count(&w), Some(2));
+    assert_eq!(Weak::weak_count(&w), 2);
     assert_eq!(Weak::strong_count(&w2), 1);
-    assert_eq!(Weak::weak_count(&w2), Some(2));
+    assert_eq!(Weak::weak_count(&w2), 2);
     drop(w);
     assert_eq!(Weak::strong_count(&w2), 1);
-    assert_eq!(Weak::weak_count(&w2), Some(1));
+    assert_eq!(Weak::weak_count(&w2), 1);
     let a2 = a.clone();
     assert_eq!(Weak::strong_count(&w2), 2);
-    assert_eq!(Weak::weak_count(&w2), Some(1));
+    assert_eq!(Weak::weak_count(&w2), 1);
     drop(a2);
     drop(a);
     assert_eq!(Weak::strong_count(&w2), 0);
-    assert_eq!(Weak::weak_count(&w2), Some(1));
+    assert_eq!(Weak::weak_count(&w2), 0);
     drop(w2);
 }
 
@@ -169,16 +162,23 @@ fn into_from_raw() {
     }
 }
 
-// #[test]
-// fn test_into_from_raw_unsized() {
-//     let rc: Rc<str> = Rc::from("foo");
-//
-//     let ptr = Rc::into_raw(rc.clone());
-//     let rc2 = unsafe { Rc::from_raw(ptr) };
-//
-//     assert_eq!(unsafe { &*ptr }, "foo");
-//     assert_eq!(rc, rc2);
-// }
+#[test]
+fn into_from_weak_raw() {
+    let x = Rc::new(Box::new("hello"));
+    let y = Rc::downgrade(&x);
+
+    let y_ptr = Weak::into_raw(y);
+    unsafe {
+        assert_eq!(**y_ptr, "hello");
+
+        let y = Weak::from_raw(y_ptr);
+        let y_up = Weak::upgrade(&y).unwrap();
+        assert_eq!(**y_up, "hello");
+        drop(y_up);
+
+        assert_eq!(Rc::try_unwrap(x).map(|x| *x), Ok("hello"));
+    }
+}
 
 #[test]
 fn get_mut() {
@@ -256,21 +256,21 @@ fn test_cowrc_clone_weak() {
 
 #[test]
 fn test_show() {
-    let item = Rc::new(75);
-    assert_eq!(format!("{:?}", item), "75");
+    let num = Rc::new(75);
+    assert_eq!(format!("{:?}", num), "75");
 }
 
 #[test]
 fn test_from_owned() {
-    let item = 123;
-    let item_rc = Rc::from(item);
-    assert!(123 == *item_rc);
+    let num = 123;
+    let num_rc = Rc::from(num);
+    assert!(123 == *num_rc);
 }
 
 #[test]
 fn test_new_weak() {
-    let item: Weak<usize> = Weak::new();
-    assert!(item.upgrade().is_none());
+    let weak: Weak<usize> = Weak::new();
+    assert!(weak.upgrade().is_none());
 }
 
 #[test]

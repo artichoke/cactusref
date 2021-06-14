@@ -1,30 +1,28 @@
-#![deny(clippy::all, clippy::pedantic)]
-#![deny(warnings, intra_doc_link_resolution_failure)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
 
-use cactusref::{Adoptable, Rc};
-
-mod leak;
+use cactusref::{Adopt, Rc};
 
 #[test]
 fn leak_adopt_with_dropped_rc() {
     env_logger::Builder::from_env("CACTUS_LOG").init();
 
+    log::info!("adopt with dropped Rc");
+
     let s = "a".repeat(1024 * 1024);
 
-    leak::Detector::new("adopt with dropped Rc", None, None).check_leaks(|_| {
-        let first = Rc::new(s.clone());
-        let mut last = Rc::clone(&first);
-        for _ in 1..10 {
-            let obj = Rc::new(s.clone());
-            unsafe {
-                Rc::adopt(&obj, &last);
-            }
-            last = obj;
-        }
+    let first = Rc::new(s.clone());
+    let mut last = Rc::clone(&first);
+    for _ in 1..10 {
+        let obj = Rc::new(s.clone());
         unsafe {
-            Rc::adopt(&first, &last);
+            Rc::adopt(&obj, &last);
         }
-        drop(first);
-        drop(last);
-    });
+        last = obj;
+    }
+    unsafe {
+        Rc::adopt(&first, &last);
+    }
+    drop(first);
+    drop(last);
 }

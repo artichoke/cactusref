@@ -1,0 +1,6 @@
+doc-valid-idents = [
+  "CactusRef",
+  "CactusRefs",
+  "OpenSSL",
+  "SipHash",
+]

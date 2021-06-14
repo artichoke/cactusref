@@ -86,7 +86,6 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           profile: minimal
           target: ${{ matrix.target }}
 

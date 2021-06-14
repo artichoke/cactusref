@@ -1,20 +1,43 @@
-use core::ptr::NonNull;
-use hashbrown::{hash_map, HashMap};
-use std::hash::{Hash, Hasher};
+//! This module includes data structures for building an object graph.
 
-use crate::ptr::{RcBox, RcBoxPtr};
+use core::cell::Cell;
+use core::fmt;
+use core::hash::{Hash, Hasher};
+use core::num::NonZeroUsize;
+use core::ptr::{self, NonNull};
+
+use crate::hash::hash_map::{DrainFilter, Iter};
+use crate::hash::HashMap;
+use crate::rc::{RcBox, RcInnerPtr};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum Kind {
+pub(crate) enum Kind {
     Forward,
     Backward,
+    Loopback,
 }
 
-pub struct Links<T: ?Sized> {
+/// A collection of forward and backward links and their corresponding adoptions.
+pub(crate) struct Links<T> {
     registry: HashMap<Link<T>, usize>,
 }
 
-impl<T: ?Sized> Links<T> {
+impl<T> fmt::Debug for Links<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Links")
+            .field("registry", &self.registry)
+            .finish()
+    }
+}
+
+impl<T> Links<T> {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            registry: HashMap::default(),
+        }
+    }
+
     #[inline]
     pub fn insert(&mut self, other: Link<T>) {
         *self.registry.entry(other).or_insert(0) += 1;
@@ -22,15 +45,18 @@ impl<T: ?Sized> Links<T> {
 
     #[inline]
     pub fn remove(&mut self, other: Link<T>, strong: usize) {
-        match self.registry.get(&other).copied().unwrap_or_default() {
-            count if count <= strong => self.registry.remove(&other),
-            count => self.registry.insert(other, count - strong),
-        };
+        let count = self.registry.get(&other).copied().unwrap_or_default();
+        let remaining_strong_count = count.checked_sub(strong).and_then(NonZeroUsize::new);
+        if let Some(remaining_strong_count) = remaining_strong_count {
+            self.registry.insert(other, remaining_strong_count.get());
+        } else {
+            self.registry.remove(&other);
+        }
     }
 
     #[inline]
     pub fn clear(&mut self) {
-        self.registry.clear()
+        self.registry.clear();
     }
 
     #[inline]
@@ -39,87 +65,136 @@ impl<T: ?Sized> Links<T> {
     }
 
     #[inline]
-    pub fn iter(&self) -> hash_map::Iter<Link<T>, usize> {
+    pub fn iter(&self) -> Iter<'_, Link<T>, usize> {
         self.registry.iter()
     }
+
+    #[inline]
+    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, Link<T>, usize, F>
+    where
+        F: FnMut(&Link<T>, &mut usize) -> bool,
+    {
+        self.registry.drain_filter(f)
+    }
 }
 
-impl<T: ?Sized> Clone for Links<T> {
-    fn clone(&self) -> Self {
+/// Link represents a directed edge in the object graph of strong CactusRef `Rc`
+/// smart pointers.
+///
+/// Links can be one of several types:
+///
+/// - Forward, which means the `Rc` storing the link is adopting the link's
+///   pointee.
+/// - Backward, which means this `Rc` is being adopted by the link's pointee.
+/// - Loopback, which means the `Rc` has adopted itself.
+pub(crate) struct Link<T> {
+    ptr: NonNull<RcBox<T>>,
+    kind: Kind,
+}
+
+impl<T> fmt::Debug for Link<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Link")
+            .field("ptr", &self.ptr)
+            .field("kind", &self.kind)
+            .finish()
+    }
+}
+
+impl<T> fmt::Pointer for Link<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Pointer::fmt(&self.ptr.as_ptr(), f)
+    }
+}
+
+impl<T> Link<T> {
+    #[inline]
+    pub const fn forward(ptr: NonNull<RcBox<T>>) -> Self {
         Self {
-            registry: self.registry.clone(),
+            ptr,
+            kind: Kind::Forward,
         }
     }
-}
 
-impl<T: ?Sized> Default for Links<T> {
-    fn default() -> Self {
+    #[inline]
+    pub const fn backward(ptr: NonNull<RcBox<T>>) -> Self {
         Self {
-            registry: HashMap::default(),
+            ptr,
+            kind: Kind::Backward,
         }
     }
-}
 
-// Using a a tuple struct is about 10% faster than using named fields.
-pub struct Link<T: ?Sized>(NonNull<RcBox<T>>, Kind);
-
-impl<T: ?Sized> Link<T> {
     #[inline]
-    pub fn forward(ptr: NonNull<RcBox<T>>) -> Self {
-        Self(ptr, Kind::Forward)
+    pub const fn loopback(ptr: NonNull<RcBox<T>>) -> Self {
+        Self {
+            ptr,
+            kind: Kind::Loopback,
+        }
     }
 
     #[inline]
-    pub fn backward(ptr: NonNull<RcBox<T>>) -> Self {
-        Self(ptr, Kind::Backward)
+    pub const fn kind(&self) -> Kind {
+        self.kind
     }
 
     #[inline]
-    pub fn link_kind(&self) -> Kind {
-        self.1
+    pub const fn as_forward(&self) -> Self {
+        Self::forward(self.ptr)
     }
 
     #[inline]
-    pub fn as_forward(&self) -> Self {
-        Self::forward(self.0)
+    pub fn as_ptr(&self) -> *mut RcBox<T> {
+        self.ptr.as_ptr()
     }
 
     #[inline]
-    pub fn as_ptr(&self) -> *const RcBox<T> {
-        self.0.as_ptr()
+    pub fn as_ref(&self) -> &RcBox<T> {
+        unsafe { self.ptr.as_ref() }
     }
 
     #[inline]
     pub fn into_raw_non_null(self) -> NonNull<RcBox<T>> {
-        self.0
+        self.ptr
     }
 }
 
-impl<T: ?Sized> RcBoxPtr<T> for Link<T> {
-    fn inner(&self) -> &RcBox<T> {
-        unsafe { self.0.as_ref() }
+impl<T> RcInnerPtr for Link<T> {
+    #[inline(always)]
+    fn weak_ref(&self) -> &Cell<usize> {
+        unsafe { self.ptr.as_ref().weak_ref() }
+    }
+
+    #[inline(always)]
+    fn strong_ref(&self) -> &Cell<usize> {
+        unsafe { self.ptr.as_ref().strong_ref() }
     }
 }
 
-impl<T: ?Sized> Copy for Link<T> {}
-
-impl<T: ?Sized> Clone for Link<T> {
+impl<T> Clone for Link<T> {
+    #[inline]
     fn clone(&self) -> Self {
-        Self(self.0, self.1)
+        Self {
+            ptr: self.ptr,
+            kind: self.kind,
+        }
     }
 }
 
-impl<T: ?Sized> PartialEq for Link<T> {
+impl<T> Copy for Link<T> {}
+
+impl<T> PartialEq for Link<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.0.as_ptr() == other.0.as_ptr() && self.1 == other.1
+        self.kind == other.kind && ptr::eq(self.as_ptr(), other.as_ptr())
     }
 }
 
-impl<T: ?Sized> Eq for Link<T> {}
+impl<T> Eq for Link<T> {}
 
-impl<T: ?Sized> Hash for Link<T> {
+impl<T> Hash for Link<T> {
+    #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-        self.1.hash(state);
+        self.ptr.hash(state);
+        self.kind.hash(state);
     }
 }
