@@ -1,4 +1,4 @@
-use alloc::alloc::{dealloc, Layout};
+use alloc::alloc::{Allocator, Global, Layout};
 use core::ptr;
 use std::mem::{self, MaybeUninit};
 
@@ -177,6 +177,7 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
         }
     }
 
+    let nonnull = this.ptr;
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
@@ -203,7 +204,7 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     (*rcbox).dec_weak();
 
     if (*rcbox).weak() == 0 {
-        dealloc(rcbox.cast(), Layout::for_value_raw(rcbox));
+        Global.deallocate(nonnull.cast(), Layout::for_value_raw(rcbox));
     }
 }
 
@@ -324,7 +325,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
                 "no more weak references, deallocating layout for item {:?} in orphaned cycle",
                 ptr
             );
-            dealloc(rcbox.cast(), Layout::for_value_raw(rcbox));
+            Global.deallocate(ptr.cast(), Layout::for_value_raw(rcbox));
         }
     }
 }
@@ -386,6 +387,7 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
     // deallocated.
     links.borrow_mut().clear();
 
+    let nonnull = this.ptr;
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
@@ -419,6 +421,6 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
             "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
             this.ptr
         );
-        dealloc(rcbox.cast(), Layout::for_value_raw(rcbox));
+        Global.deallocate(nonnull.cast(), Layout::for_value_raw(rcbox));
     }
 }
