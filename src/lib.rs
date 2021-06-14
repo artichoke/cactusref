@@ -4,7 +4,6 @@
     core_intrinsics,
     dropck_eyepatch,
     layout_for_ptr,
-    ptr_internals,
     set_ptr_value,
     slice_ptr_get
 )]

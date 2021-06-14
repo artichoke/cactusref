@@ -247,7 +247,7 @@ use core::marker::{PhantomData, Unpin};
 use core::mem::{self, ManuallyDrop, MaybeUninit};
 use core::ops::Deref;
 use core::pin::Pin;
-use core::ptr::{self, NonNull, Unique};
+use core::ptr::{self, NonNull};
 
 use alloc::alloc::handle_alloc_error;
 use alloc::alloc::{AllocError, Allocator, Global, Layout};
@@ -985,10 +985,10 @@ impl<T> Rc<T> {
         )
     }
 
-    #[cfg(not(no_global_oom_handling))]
     fn from_box(v: Box<T>) -> Rc<T> {
         unsafe {
-            let (box_unique, alloc) = Box::into_unique(v);
+            // SAFETY: `Box` is always a non-null pointer.
+            let box_unique = NonNull::new_unchecked(Box::into_raw(v));
             let box_ptr = box_unique.as_ptr();
 
             let value_size = mem::size_of_val(&*box_ptr);
@@ -1002,7 +1002,9 @@ impl<T> Rc<T> {
             );
 
             // Free the allocation without dropping its contents
-            box_free(box_unique, alloc);
+            //
+            // SAFETY: CactusRef assumes the global allocator.
+            box_free(box_unique, Global);
 
             Self::from_ptr(ptr)
         }
@@ -1900,7 +1902,7 @@ fn data_offset_align(align: usize) -> isize {
 // well.
 // For example if `Box` is changed to  `struct Box<T: ?Sized, A: Allocator>(Unique<T>, A)`,
 // this function has to be changed to `fn box_free<T: ?Sized, A: Allocator>(Unique<T>, A)` as well.
-pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: Unique<T>, alloc: A) {
+pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: NonNull<T>, alloc: A) {
     let size = mem::size_of_val(ptr.as_ref());
     let align = min_align_of_val(ptr.as_ref());
     let layout = Layout::from_size_align_unchecked(size, align);
