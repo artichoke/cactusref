@@ -28,10 +28,9 @@
 //!         let tail = head.borrow_mut().prev.take();
 //!         let next = head.borrow_mut().next.take();
 //!         if let Some(ref tail) = tail {
-//!             unsafe {
-//!                 Rc::unadopt(&head, tail);
-//!                 Rc::unadopt(tail, &head);
-//!             }
+//!             Rc::unadopt(&head, tail);
+//!             Rc::unadopt(tail, &head);
+//!
 //!             tail.borrow_mut().next = next.as_ref().map(Rc::clone);
 //!             if let Some(ref next) = next {
 //!                 unsafe {
@@ -40,10 +39,9 @@
 //!             }
 //!         }
 //!         if let Some(ref next) = next {
-//!             unsafe {
-//!                 Rc::unadopt(&head, next);
-//!                 Rc::unadopt(next, &head);
-//!             }
+//!             Rc::unadopt(&head, next);
+//!             Rc::unadopt(next, &head);
+//!
 //!             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
 //!             if let Some(ref tail) = tail {
 //!                 unsafe {
