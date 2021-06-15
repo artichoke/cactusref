@@ -158,7 +158,7 @@
 <span class="doccomment">//!             tail.borrow_mut().next = next.as_ref().map(Rc::clone);</span>
 <span class="doccomment">//!             if let Some(ref next) = next {</span>
 <span class="doccomment">//!                 unsafe {</span>
-<span class="doccomment">//!                     Rc::adopt(tail, next);</span>
+<span class="doccomment">//!                     Rc::adopt_unchecked(tail, next);</span>
 <span class="doccomment">//!                 }</span>
 <span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
@@ -170,7 +170,7 @@
 <span class="doccomment">//!             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);</span>
 <span class="doccomment">//!             if let Some(ref tail) = tail {</span>
 <span class="doccomment">//!                 unsafe {</span>
-<span class="doccomment">//!                     Rc::adopt(next, tail);</span>
+<span class="doccomment">//!                     Rc::adopt_unchecked(next, tail);</span>
 <span class="doccomment">//!                 }</span>
 <span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
@@ -197,8 +197,8 @@
 <span class="doccomment">//!             curr.borrow_mut().next = Some(Rc::clone(next));</span>
 <span class="doccomment">//!             next.borrow_mut().prev = Some(Rc::clone(curr));</span>
 <span class="doccomment">//!             unsafe {</span>
-<span class="doccomment">//!                 Rc::adopt(curr, next);</span>
-<span class="doccomment">//!                 Rc::adopt(next, curr);</span>
+<span class="doccomment">//!                 Rc::adopt_unchecked(curr, next);</span>
+<span class="doccomment">//!                 Rc::adopt_unchecked(next, curr);</span>
 <span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
 <span class="doccomment">//!         let tail = &amp;nodes[nodes.len() - 1];</span>
@@ -206,8 +206,8 @@
 <span class="doccomment">//!         tail.borrow_mut().next = Some(Rc::clone(head));</span>
 <span class="doccomment">//!         head.borrow_mut().prev = Some(Rc::clone(tail));</span>
 <span class="doccomment">//!         unsafe {</span>
-<span class="doccomment">//!             Rc::adopt(tail, head);</span>
-<span class="doccomment">//!             Rc::adopt(head, tail);</span>
+<span class="doccomment">//!             Rc::adopt_unchecked(tail, head);</span>
+<span class="doccomment">//!             Rc::adopt_unchecked(head, tail);</span>
 <span class="doccomment">//!         }</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//!         let head = Rc::clone(head);</span>

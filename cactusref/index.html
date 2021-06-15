@@ -42,7 +42,7 @@ implements most of the API from <code>std</code>.</p>
 collector local to a graph objects. Graphs of CactusRefs are cycle-aware and
 can deallocate a cycle of strong references that is otherwise unreachable
 from the rest of the object graph, unlike <a href="https://doc.rust-lang.org/stable/std/rc/struct.Rc.html"><code>std::rc::Rc</code></a>.</p>
-<p><code>CactusRef</code> relies on proper use of <a href="trait.Adopt.html#tymethod.adopt" title="Adopt::adopt"><code>Adopt::adopt</code></a> and <a href="trait.Adopt.html#tymethod.unadopt" title="Adopt::unadopt"><code>Adopt::unadopt</code></a>
+<p><code>CactusRef</code> relies on proper use of <a href="trait.Adopt.html#tymethod.adopt_unchecked" title="Adopt::adopt_unchecked"><code>Adopt::adopt_unchecked</code></a> and <a href="trait.Adopt.html#tymethod.unadopt" title="Adopt::unadopt"><code>Adopt::unadopt</code></a>
 to maintain bookkeeping about the object graph for breaking cycles. These
 functions are unsafe because improperly managing the bookkeeping can cause
 the <code>Rc</code> drop implementation to deallocate cycles while they are still

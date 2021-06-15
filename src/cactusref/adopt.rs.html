@@ -247,8 +247,8 @@
 <span class="doccomment">/// Build a graph of linked [`Rc`] smart pointers to enable busting cycles on</span>
 <span class="doccomment">/// drop.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// Calling [`adopt`] builds an object graph which can be used by to detect</span>
-<span class="doccomment">/// cycles.</span>
+<span class="doccomment">/// Calling [`adopt_unchecked`] builds an object graph which can be used by to</span>
+<span class="doccomment">/// detect cycles.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Safety</span>
 <span class="doccomment">///</span>
@@ -263,7 +263,7 @@
 <span class="doccomment">/// - Double-frees.</span>
 <span class="doccomment">/// - Dangling `Rc`s which will cause a use after free.`</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// [`adopt`]: Adopt::adopt</span>
+<span class="doccomment">/// [`adopt_unchecked`]: Adopt::adopt_unchecked</span>
 <span class="doccomment">/// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html</span>
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">trait</span> <span class="ident">Adopt</span>: <span class="ident">sealed::Sealed</span> {
     <span class="doccomment">/// Perform bookkeeping to record that `this` has an owned reference to</span>
@@ -276,7 +276,7 @@
     <span class="doccomment">/// `adopt` indicates that `this` owns one distinct clone of `other`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This is an associated function that needs to be used as</span>
-    <span class="doccomment">/// `Adopt::adopt(...)`. A method would interfere with methods of the same</span>
+    <span class="doccomment">/// `Adopt::adopt_unchecked(...)`. A method would interfere with methods of the same</span>
     <span class="doccomment">/// name on the contents of a `Rc` used through `Deref`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Safety</span>
@@ -287,7 +287,7 @@
     <span class="doccomment">/// reference to `other`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`unadopt`]: Adopt::unadopt</span>
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">adopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>);
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">adopt_unchecked</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>);
 
     <span class="doccomment">/// Perform bookkeeping to record that `this` has removed an owned reference</span>
     <span class="doccomment">/// to `other`.</span>
@@ -305,7 +305,7 @@
     <span class="doccomment">/// `other`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// For each call to `Adopt::unadopt(&amp;this, &amp;other)`, callers must ensure</span>
-    <span class="doccomment">/// that a matching call was made to `Adopt::adopt(&amp;this, &amp;other)`.</span>
+    <span class="doccomment">/// that a matching call was made to `Adopt::adopt_unchecked(&amp;this, &amp;other)`.</span>
     <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">unadopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>);
 }
 
@@ -322,7 +322,7 @@
     <span class="doccomment">/// `adopt` indicates that `this` owns one distinct clone of `other`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This is an associated function that needs to be used as</span>
-    <span class="doccomment">/// `Rc::adopt(...)`. A method would interfere with methods of the same</span>
+    <span class="doccomment">/// `Rc::adopt_unchecked(...)`. A method would interfere with methods of the same</span>
     <span class="doccomment">/// name on the contents of a `Rc` used through `Deref`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Safety</span>
@@ -353,7 +353,7 @@
     <span class="doccomment">/// for _ in 0..10 {</span>
     <span class="doccomment">///     let item = Rc::clone(&amp;array);</span>
     <span class="doccomment">///     unsafe {</span>
-    <span class="doccomment">///         Rc::adopt(&amp;array, &amp;item);</span>
+    <span class="doccomment">///         Rc::adopt_unchecked(&amp;array, &amp;item);</span>
     <span class="doccomment">///     }</span>
     <span class="doccomment">///     array.borrow_mut().buffer.push(item);</span>
     <span class="doccomment">/// }</span>
@@ -366,7 +366,7 @@
     <span class="doccomment">/// ```</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`unadopt`]: Rc::unadopt</span>
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">adopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">adopt_unchecked</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
         <span class="comment">// Self-adoptions have no effect.</span>
         <span class="kw">if</span> <span class="ident">ptr::eq</span>(<span class="ident">this</span>, <span class="ident">other</span>) {
             <span class="comment">// Store a forward reference to `other` in `this`. This bookkeeping logs</span>
@@ -405,7 +405,7 @@
     <span class="doccomment">/// `other`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// For each call to `Adopt::unadopt(&amp;this, &amp;other)`, callers must ensure</span>
-    <span class="doccomment">/// that a matching call was made to `Adopt::adopt(&amp;this, &amp;other)`.</span>
+    <span class="doccomment">/// that a matching call was made to `Adopt::adopt_unchecked(&amp;this, &amp;other)`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This crate makes a best-effort attempt to abort the program if an access</span>
     <span class="doccomment">/// to a dangling `Rc` occurs.</span>
@@ -427,7 +427,7 @@
     <span class="doccomment">/// for _ in 0..10 {</span>
     <span class="doccomment">///     let item = Rc::clone(&amp;array);</span>
     <span class="doccomment">///     unsafe {</span>
-    <span class="doccomment">///         Rc::adopt(&amp;array, &amp;item);</span>
+    <span class="doccomment">///         Rc::adopt_unchecked(&amp;array, &amp;item);</span>
     <span class="doccomment">///     }</span>
     <span class="doccomment">///     array.borrow_mut().buffer.push(item);</span>
     <span class="doccomment">/// }</span>

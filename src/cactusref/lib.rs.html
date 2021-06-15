@@ -240,7 +240,7 @@
 <span class="doccomment">//! can deallocate a cycle of strong references that is otherwise unreachable</span>
 <span class="doccomment">//! from the rest of the object graph, unlike [`std::rc::Rc`].</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! `CactusRef` relies on proper use of [`Adopt::adopt`] and [`Adopt::unadopt`]</span>
+<span class="doccomment">//! `CactusRef` relies on proper use of [`Adopt::adopt_unchecked`] and [`Adopt::unadopt`]</span>
 <span class="doccomment">//! to maintain bookkeeping about the object graph for breaking cycles. These</span>
 <span class="doccomment">//! functions are unsafe because improperly managing the bookkeeping can cause</span>
 <span class="doccomment">//! the `Rc` drop implementation to deallocate cycles while they are still</span>
