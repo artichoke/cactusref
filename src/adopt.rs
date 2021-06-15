@@ -38,6 +38,7 @@ pub unsafe trait Adopt: sealed::Sealed {
     /// The smart pointer's inner owned value.
     type Inner;
 
+    /// TODO: document me!
     fn adopt(this: &mut Self, other: &Self)
     where
         Self::Inner: Trace;
@@ -90,6 +91,7 @@ unsafe impl<T> Adopt for Rc<T> {
     /// `T`.
     type Inner = T;
 
+    /// TODO: document me!
     fn adopt(this: &mut Self, other: &Self)
     where
         Self::Inner: Trace,
