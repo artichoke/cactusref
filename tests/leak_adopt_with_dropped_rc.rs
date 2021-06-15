@@ -16,12 +16,12 @@ fn leak_adopt_with_dropped_rc() {
     for _ in 1..10 {
         let obj = Rc::new(s.clone());
         unsafe {
-            Rc::adopt(&obj, &last);
+            Rc::adopt_unchecked(&obj, &last);
         }
         last = obj;
     }
     unsafe {
-        Rc::adopt(&first, &last);
+        Rc::adopt_unchecked(&first, &last);
     }
     drop(first);
     drop(last);

@@ -88,14 +88,14 @@ let right = Rc::new(RefCell::new(right));
 
 unsafe {
     // bookkeep that `right` has added an owning ref to `left`.
-    Rc::adopt(&right, &left);
+    Rc::adopt_unchecked(&right, &left);
 }
 
 left.borrow_mut().next = Some(Rc::clone(&right));
 
 unsafe {
     // bookkeep that `left` has added an owning ref to `right`.
-    Rc::adopt(&left, &right);
+    Rc::adopt_unchecked(&left, &right);
 }
 
 let mut node = Rc::clone(&left);

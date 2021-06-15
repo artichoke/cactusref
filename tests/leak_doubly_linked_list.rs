@@ -29,7 +29,7 @@ impl<T> List<T> {
             tail.borrow_mut().next = next.as_ref().map(Rc::clone);
             if let Some(ref next) = next {
                 unsafe {
-                    Rc::adopt(tail, next);
+                    Rc::adopt_unchecked(tail, next);
                 }
             }
         }
@@ -41,7 +41,7 @@ impl<T> List<T> {
             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);
             if let Some(ref tail) = tail {
                 unsafe {
-                    Rc::adopt(next, tail);
+                    Rc::adopt_unchecked(next, tail);
                 }
             }
         }
@@ -68,8 +68,8 @@ impl<T> From<Vec<T>> for List<T> {
             curr.borrow_mut().next = Some(Rc::clone(next));
             next.borrow_mut().prev = Some(Rc::clone(curr));
             unsafe {
-                Rc::adopt(curr, next);
-                Rc::adopt(next, curr);
+                Rc::adopt_unchecked(curr, next);
+                Rc::adopt_unchecked(next, curr);
             }
         }
         let tail = &nodes[nodes.len() - 1];
@@ -77,8 +77,8 @@ impl<T> From<Vec<T>> for List<T> {
         tail.borrow_mut().next = Some(Rc::clone(head));
         head.borrow_mut().prev = Some(Rc::clone(tail));
         unsafe {
-            Rc::adopt(tail, head);
-            Rc::adopt(head, tail);
+            Rc::adopt_unchecked(tail, head);
+            Rc::adopt_unchecked(head, tail);
         }
 
         let head = Rc::clone(head);

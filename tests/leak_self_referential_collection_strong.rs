@@ -24,7 +24,7 @@ fn leak_self_referential_collection_strong() {
     for _ in 1..10 {
         let clone = Rc::clone(&vec);
         unsafe {
-            Rc::adopt(&vec, &clone);
+            Rc::adopt_unchecked(&vec, &clone);
         }
         vec.borrow_mut().inner.push(clone);
     }

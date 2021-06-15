@@ -24,7 +24,7 @@ fn weak_upgrade_returns_none_when_cycle_is_deallocated() {
     for _ in 0..10 {
         let clone = Rc::clone(&vec);
         unsafe {
-            Rc::adopt(&vec, &clone);
+            Rc::adopt_unchecked(&vec, &clone);
         }
         vec.borrow_mut().inner.push(clone);
     }

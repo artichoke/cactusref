@@ -22,14 +22,14 @@ fn adopt_self_noop() {
         link: None,
     }));
     unsafe {
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
-        Rc::adopt(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
+        Rc::adopt_unchecked(&first, &first);
     }
     assert_eq!(first.borrow().inner, s);
     assert!(first.borrow().link.is_none());
