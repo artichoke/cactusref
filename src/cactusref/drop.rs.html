@@ -426,10 +426,12 @@
 <span id="424">424</span>
 <span id="425">425</span>
 <span id="426">426</span>
+<span id="427">427</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">alloc::alloc</span>::{<span class="ident">Allocator</span>, <span class="ident">Global</span>, <span class="ident">Layout</span>};
+<span class="kw">use</span> <span class="ident">alloc::vec</span>;
+<span class="kw">use</span> <span class="ident">core::mem</span>::{<span class="self">self</span>, <span class="ident">MaybeUninit</span>};
 <span class="kw">use</span> <span class="ident">core::ptr</span>;
-<span class="kw">use</span> <span class="ident">std::mem</span>::{<span class="self">self</span>, <span class="ident">MaybeUninit</span>};
 
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::hash::HashMap</span>;
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::link</span>::{<span class="ident">Kind</span>, <span class="ident">Link</span>};

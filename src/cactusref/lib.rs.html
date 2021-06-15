@@ -154,6 +154,9 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
 </pre><pre class="rust">
 <span class="attribute">#![<span class="ident">feature</span>(
     <span class="ident">allocator_api</span>,
@@ -277,6 +280,7 @@
 <span class="doccomment">//! [`std::rc::Rc`]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html</span>
 
 <span class="attribute">#![<span class="ident">doc</span>(<span class="ident">html_root_url</span> <span class="op">=</span> <span class="string">&quot;https://docs.rs/cactusref/0.1.1&quot;</span>)]</span>
+<span class="attribute">#![<span class="ident">no_std</span>]</span>
 
 <span class="comment">// Ensure code blocks in README.md compile</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
@@ -284,6 +288,8 @@
 <span class="kw">mod</span> <span class="ident">readme</span> {}
 
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">alloc</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>, <span class="ident">test</span>, <span class="ident">doctest</span>, <span class="ident">miri</span>))]</span>
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">std</span>;
 <span class="attribute">#[<span class="ident">macro_use</span>]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">log</span>;
 
