@@ -275,9 +275,9 @@ pointers to this allocation will be disassociated.</p>
 
 <span class="macro">assert!</span>(<span class="number">76</span> <span class="op">=</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">data</span>);
 <span class="macro">assert!</span>(<span class="ident">weak</span>.<span class="ident">upgrade</span>().<span class="ident">is_none</span>());</pre></div>
-</div></details></div></details><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle"><summary><div id="impl-Adopt" class="impl has-srclink"><code class="in-band">impl&lt;T&gt; <a class="trait" href="trait.Adopt.html" title="trait cactusref::Adopt">Adopt</a> for <a class="struct" href="struct.Rc.html" title="struct cactusref::Rc">Rc</a>&lt;T&gt;</code><a href="#impl-Adopt" class="anchor"></a><a class="srclink" href="../src/cactusref/adopt.rs.html#82-229" title="goto source code">[src]</a></div></summary><div class="docblock"><p>Implementation of <a href="trait.Adopt.html" title="Adopt"><code>Adopt</code></a> for <a href="struct.Rc.html" title="Rc"><code>Rc</code></a> which enables <code>Rc</code>s to form a cycle
+</div></details></div></details><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle"><summary><div id="impl-Adopt" class="impl has-srclink"><code class="in-band">impl&lt;T&gt; <a class="trait" href="trait.Adopt.html" title="trait cactusref::Adopt">Adopt</a> for <a class="struct" href="struct.Rc.html" title="struct cactusref::Rc">Rc</a>&lt;T&gt;</code><a href="#impl-Adopt" class="anchor"></a><a class="srclink" href="../src/cactusref/adopt.rs.html#80-248" title="goto source code">[src]</a></div></summary><div class="docblock"><p>Implementation of <a href="trait.Adopt.html" title="Adopt"><code>Adopt</code></a> for <a href="struct.Rc.html" title="Rc"><code>Rc</code></a> which enables <code>Rc</code>s to form a cycle
 of strong references that are reaped by <code>Rc</code>’s <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html" title="Drop"><code>Drop</code></a> implementation.</p>
-</div><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.adopt_unchecked" class="method trait-impl has-srclink"><code>unsafe fn <a href="trait.Adopt.html#tymethod.adopt_unchecked" class="fnname">adopt_unchecked</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a href="#method.adopt_unchecked" class="anchor"></a><a class="srclink" href="../src/cactusref/adopt.rs.html#137-158" title="goto source code">[src]</a></div></summary><div class="docblock"><p>Perform bookkeeping to record that <code>this</code> has an owned reference to
+</div><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.adopt_unchecked" class="method trait-impl has-srclink"><code>unsafe fn <a href="trait.Adopt.html#tymethod.adopt_unchecked" class="fnname">adopt_unchecked</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a href="#method.adopt_unchecked" class="anchor"></a><a class="srclink" href="../src/cactusref/adopt.rs.html#136-166" title="goto source code">[src]</a></div></summary><div class="docblock"><p>Perform bookkeeping to record that <code>this</code> has an owned reference to
 <code>other</code>.</p>
 <p>Adoption is a one-way link, or a directed edge in the object graph which
 means “<code>this</code> owns <code>other</code>”.</p>
@@ -288,8 +288,9 @@ means “<code>this</code> owns <code>other</code>”.</p>
 name on the contents of a <code>Rc</code> used through <code>Deref</code>.</p>
 <h1 id="safety-5" class="section-header"><a href="#safety-5">Safety</a></h1>
 <p>Callers must ensure that <code>this</code> owns a strong reference to <code>other</code>.</p>
-<p>Callers must call <a href="struct.Rc.html#method.unadopt"><code>unadopt</code></a> when <code>this</code> no longer holds a strong
-reference to <code>other</code>.</p>
+<p>Callers should call <a href="struct.Rc.html#method.unadopt"><code>unadopt</code></a> when <code>this</code> no longer holds a strong
+reference to <code>other</code> to avoid memory leaks, but this is not required for
+soundness.</p>
 <p>Calling <code>adopt</code> does not increment the strong count of <code>other</code>. Callers
 must ensure that <code>other</code> has been cloned and stored in the <code>T</code> contained
 by <code>this</code>.</p>
@@ -319,20 +320,16 @@ by <code>this</code>.</p>
 <span class="ident">drop</span>(<span class="ident">array</span>);
 <span class="macro">assert!</span>(<span class="ident">weak</span>.<span class="ident">upgrade</span>().<span class="ident">is_none</span>());
 <span class="macro">assert_eq!</span>(<span class="ident">weak</span>.<span class="ident">weak_count</span>(), <span class="number">0</span>);</pre></div>
-</div></details><details class="rustdoc-toggle method-toggle" open><summary><div id="method.unadopt" class="method trait-impl has-srclink"><code>unsafe fn <a href="trait.Adopt.html#tymethod.unadopt" class="fnname">unadopt</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a href="#method.unadopt" class="anchor"></a><a class="srclink" href="../src/cactusref/adopt.rs.html#215-228" title="goto source code">[src]</a></div></summary><div class="docblock"><p>Perform bookkeeping to record that <code>this</code> has removed an owned reference
+</div></details><details class="rustdoc-toggle method-toggle" open><summary><div id="method.unadopt" class="method trait-impl has-srclink"><code>fn <a href="trait.Adopt.html#tymethod.unadopt" class="fnname">unadopt</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a href="#method.unadopt" class="anchor"></a><a class="srclink" href="../src/cactusref/adopt.rs.html#217-247" title="goto source code">[src]</a></div></summary><div class="docblock"><p>Perform bookkeeping to record that <code>this</code> has removed an owned reference
 to <code>other</code>.</p>
 <p>Adoption is a one-way link, or a directed edge in the object graph which
 means “<code>this</code> owns <code>other</code>”.</p>
 <p>This is an associated function that needs to be used as
 <code>Adopt::unadopt(...)</code>. A method would interfere with methods of the same
 name on the contents of a <code>Rc</code> used through <code>Deref</code>.</p>
-<h1 id="safety-6" class="section-header"><a href="#safety-6">Safety</a></h1>
-<p>Callers must ensure that <code>this</code> has removed an owned reference to
-<code>other</code>.</p>
-<p>For each call to <code>Adopt::unadopt(&amp;this, &amp;other)</code>, callers must ensure
-that a matching call was made to <code>Adopt::adopt_unchecked(&amp;this, &amp;other)</code>.</p>
-<p>This crate makes a best-effort attempt to abort the program if an access
-to a dangling <code>Rc</code> occurs.</p>
+<h1 id="memory-leaks" class="section-header"><a href="#memory-leaks">Memory Leaks</a></h1>
+<p>Failure to call this function when removing an owned <code>Rc</code> from <code>this</code>
+is safe, but may result in a memory leak.</p>
 <h1 id="examples-17" class="section-header"><a href="#examples-17">Examples</a></h1>
 <p>The following implements a self-referential array.</p>
 
@@ -356,10 +353,10 @@ to a dangling <code>Rc</code> occurs.</p>
 <span class="kw">let</span> <span class="ident">weak</span> <span class="op">=</span> <span class="ident">Rc::downgrade</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>);
 <span class="comment">// 1 for the array binding, 10 for the `Rc`s in buffer</span>
 <span class="macro">assert_eq!</span>(<span class="ident">Rc::strong_count</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>), <span class="number">11</span>);
+
 <span class="kw">let</span> <span class="ident">head</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">borrow_mut</span>().<span class="ident">buffer</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>();
-<span class="kw">unsafe</span> {
-    <span class="ident">Rc::unadopt</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>, <span class="kw-2">&amp;</span><span class="ident">head</span>);
-}
+<span class="ident">Rc::unadopt</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>, <span class="kw-2">&amp;</span><span class="ident">head</span>);
+
 <span class="ident">drop</span>(<span class="ident">head</span>);
 <span class="macro">assert_eq!</span>(<span class="ident">Rc::strong_count</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>), <span class="number">10</span>);
 <span class="ident">drop</span>(<span class="ident">array</span>);

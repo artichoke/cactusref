@@ -118,8 +118,6 @@
 <span id="116">116</span>
 <span id="117">117</span>
 <span id="118">118</span>
-<span id="119">119</span>
-<span id="120">120</span>
 </pre><pre class="rust">
 <span class="doccomment">//! `CactusRef` can be used to implement collections that own strong references</span>
 <span class="doccomment">//! to themselves.</span>
@@ -151,10 +149,9 @@
 <span class="doccomment">//!         let tail = head.borrow_mut().prev.take();</span>
 <span class="doccomment">//!         let next = head.borrow_mut().next.take();</span>
 <span class="doccomment">//!         if let Some(ref tail) = tail {</span>
-<span class="doccomment">//!             unsafe {</span>
-<span class="doccomment">//!                 Rc::unadopt(&amp;head, tail);</span>
-<span class="doccomment">//!                 Rc::unadopt(tail, &amp;head);</span>
-<span class="doccomment">//!             }</span>
+<span class="doccomment">//!             Rc::unadopt(&amp;head, tail);</span>
+<span class="doccomment">//!             Rc::unadopt(tail, &amp;head);</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//!             tail.borrow_mut().next = next.as_ref().map(Rc::clone);</span>
 <span class="doccomment">//!             if let Some(ref next) = next {</span>
 <span class="doccomment">//!                 unsafe {</span>
@@ -163,10 +160,9 @@
 <span class="doccomment">//!             }</span>
 <span class="doccomment">//!         }</span>
 <span class="doccomment">//!         if let Some(ref next) = next {</span>
-<span class="doccomment">//!             unsafe {</span>
-<span class="doccomment">//!                 Rc::unadopt(&amp;head, next);</span>
-<span class="doccomment">//!                 Rc::unadopt(next, &amp;head);</span>
-<span class="doccomment">//!             }</span>
+<span class="doccomment">//!             Rc::unadopt(&amp;head, next);</span>
+<span class="doccomment">//!             Rc::unadopt(next, &amp;head);</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//!             next.borrow_mut().prev = tail.as_ref().map(Rc::clone);</span>
 <span class="doccomment">//!             if let Some(ref tail) = tail {</span>
 <span class="doccomment">//!                 unsafe {</span>

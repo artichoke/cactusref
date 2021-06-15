@@ -229,6 +229,25 @@
 <span id="227">227</span>
 <span id="228">228</span>
 <span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">core::ptr</span>;
 
@@ -283,8 +302,9 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Callers must ensure that `this` owns a strong reference to `other`.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Callers must call [`unadopt`] when `this` no longer holds a strong</span>
-    <span class="doccomment">/// reference to `other`.</span>
+    <span class="doccomment">/// Callers should call [`unadopt`] when `this` no longer holds a strong</span>
+    <span class="doccomment">/// reference to `other` to avoid memory leaks, but this is not required for</span>
+    <span class="doccomment">/// soundness.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// [`unadopt`]: Adopt::unadopt</span>
     <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">adopt_unchecked</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>);
@@ -299,14 +319,11 @@
     <span class="doccomment">/// `Adopt::unadopt(...)`. A method would interfere with methods of the same</span>
     <span class="doccomment">/// name on the contents of a `Rc` used through `Deref`.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Safety</span>
+    <span class="doccomment">/// # Memory Leaks</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Callers must ensure that `this` has removed an owned reference to</span>
-    <span class="doccomment">/// `other`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// For each call to `Adopt::unadopt(&amp;this, &amp;other)`, callers must ensure</span>
-    <span class="doccomment">/// that a matching call was made to `Adopt::adopt_unchecked(&amp;this, &amp;other)`.</span>
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">unadopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>);
+    <span class="doccomment">/// Failure to call this function when removing an owned `Rc` from `this`</span>
+    <span class="doccomment">/// is safe, but may result in a memory leak.</span>
+    <span class="kw">fn</span> <span class="ident">unadopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>);
 }
 
 <span class="doccomment">/// Implementation of [`Adopt`] for [`Rc`] which enables `Rc`s to form a cycle</span>
@@ -329,8 +346,9 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Callers must ensure that `this` owns a strong reference to `other`.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Callers must call [`unadopt`] when `this` no longer holds a strong</span>
-    <span class="doccomment">/// reference to `other`.</span>
+    <span class="doccomment">/// Callers should call [`unadopt`] when `this` no longer holds a strong</span>
+    <span class="doccomment">/// reference to `other` to avoid memory leaks, but this is not required for</span>
+    <span class="doccomment">/// soundness.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Calling `adopt` does not increment the strong count of `other`. Callers</span>
     <span class="doccomment">/// must ensure that `other` has been cloned and stored in the `T` contained</span>
@@ -369,22 +387,31 @@
     <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">adopt_unchecked</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
         <span class="comment">// Self-adoptions have no effect.</span>
         <span class="kw">if</span> <span class="ident">ptr::eq</span>(<span class="ident">this</span>, <span class="ident">other</span>) {
-            <span class="comment">// Store a forward reference to `other` in `this`. This bookkeeping logs</span>
-            <span class="comment">// a strong reference and is used for discovering cycles.</span>
+            <span class="comment">// Store a loopback reference to `other` in `this`. This bookkeeping</span>
+            <span class="comment">// logs a strong reference and is used for discovering cycles.</span>
+            <span class="comment">//</span>
+            <span class="comment">// SAFETY: `this` is a live `Rc` so the `links` on its inner</span>
+            <span class="comment">// allocation are an inhabited `MaybeUninit`.</span>
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>();
             <span class="ident">links</span>.<span class="ident">insert</span>(<span class="ident">Link::loopback</span>(<span class="ident">other</span>.<span class="ident">ptr</span>));
             <span class="kw">return</span>;
         }
         <span class="comment">// Store a forward reference to `other` in `this`. This bookkeeping logs</span>
         <span class="comment">// a strong reference and is used for discovering cycles.</span>
+        <span class="comment">//</span>
+        <span class="comment">// SAFETY: `this` is a live `Rc` so the `links` on its inner allocation</span>
+        <span class="comment">// are an inhabited `MaybeUninit`.</span>
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>();
         <span class="ident">links</span>.<span class="ident">insert</span>(<span class="ident">Link::forward</span>(<span class="ident">other</span>.<span class="ident">ptr</span>));
-        <span class="comment">// `this` and `other` may be the same `Rc`. Drop the borrow on `links`</span>
-        <span class="comment">// before accessing `other` to avoid a already borrowed error from the</span>
-        <span class="comment">// `RefCell`.</span>
+        <span class="comment">// `this` and `other` may point to the same allocation. Drop the borrow</span>
+        <span class="comment">// on `links` before accessing `other` to avoid a already borrowed error</span>
+        <span class="comment">// from the `RefCell`.</span>
         <span class="ident">drop</span>(<span class="ident">links</span>);
         <span class="comment">// Store a backward reference to `this` in `other`. This bookkeeping is</span>
         <span class="comment">// used for discovering cycles.</span>
+        <span class="comment">//</span>
+        <span class="comment">// SAFETY: `this` is a live `Rc` so the `links` on its inner allocation</span>
+        <span class="comment">// are an inhabited `MaybeUninit`.</span>
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>();
         <span class="ident">links</span>.<span class="ident">insert</span>(<span class="ident">Link::backward</span>(<span class="ident">this</span>.<span class="ident">ptr</span>));
     }
@@ -399,16 +426,10 @@
     <span class="doccomment">/// `Adopt::unadopt(...)`. A method would interfere with methods of the same</span>
     <span class="doccomment">/// name on the contents of a `Rc` used through `Deref`.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Safety</span>
+    <span class="doccomment">/// # Memory Leaks</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Callers must ensure that `this` has removed an owned reference to</span>
-    <span class="doccomment">/// `other`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// For each call to `Adopt::unadopt(&amp;this, &amp;other)`, callers must ensure</span>
-    <span class="doccomment">/// that a matching call was made to `Adopt::adopt_unchecked(&amp;this, &amp;other)`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This crate makes a best-effort attempt to abort the program if an access</span>
-    <span class="doccomment">/// to a dangling `Rc` occurs.</span>
+    <span class="doccomment">/// Failure to call this function when removing an owned `Rc` from `this`</span>
+    <span class="doccomment">/// is safe, but may result in a memory leak.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -434,28 +455,45 @@
     <span class="doccomment">/// let weak = Rc::downgrade(&amp;array);</span>
     <span class="doccomment">/// // 1 for the array binding, 10 for the `Rc`s in buffer</span>
     <span class="doccomment">/// assert_eq!(Rc::strong_count(&amp;array), 11);</span>
+    <span class="doccomment">///</span>
     <span class="doccomment">/// let head = array.borrow_mut().buffer.pop().unwrap();</span>
-    <span class="doccomment">/// unsafe {</span>
-    <span class="doccomment">///     Rc::unadopt(&amp;array, &amp;head);</span>
-    <span class="doccomment">/// }</span>
+    <span class="doccomment">/// Rc::unadopt(&amp;array, &amp;head);</span>
+    <span class="doccomment">///</span>
     <span class="doccomment">/// drop(head);</span>
     <span class="doccomment">/// assert_eq!(Rc::strong_count(&amp;array), 10);</span>
     <span class="doccomment">/// drop(array);</span>
     <span class="doccomment">/// assert!(weak.upgrade().is_none());</span>
     <span class="doccomment">/// assert_eq!(weak.weak_count(), 0);</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">unadopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
+    <span class="kw">fn</span> <span class="ident">unadopt</span>(<span class="ident">this</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
+        <span class="comment">// Self-adoptions have no effect.</span>
+        <span class="kw">if</span> <span class="ident">ptr::eq</span>(<span class="ident">this</span>, <span class="ident">other</span>) {
+            <span class="comment">// Remove a loopback reference to `other` in `this`. This bookkeeping</span>
+            <span class="comment">// logs a strong reference and is used for discovering cycles.</span>
+            <span class="comment">//</span>
+            <span class="comment">// SAFETY: `this` is a live `Rc` so the `links` on its inner</span>
+            <span class="comment">// allocation are an inhabited `MaybeUninit`.</span>
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">this</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>() };
+            <span class="ident">links</span>.<span class="ident">remove</span>(<span class="ident">Link::loopback</span>(<span class="ident">other</span>.<span class="ident">ptr</span>), <span class="number">1</span>);
+            <span class="kw">return</span>;
+        }
         <span class="comment">// Remove a forward reference to `other` in `this`. This bookkeeping</span>
         <span class="comment">// removes a strong reference and is used for discovering cycles.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>();
+        <span class="comment">//</span>
+        <span class="comment">// SAFETY: `this` is a live `Rc` so the `links` on its inner allocation</span>
+        <span class="comment">// are an inhabited `MaybeUninit`.</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">this</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>() };
         <span class="ident">links</span>.<span class="ident">remove</span>(<span class="ident">Link::forward</span>(<span class="ident">other</span>.<span class="ident">ptr</span>), <span class="number">1</span>);
-        <span class="comment">// `this` and `other` may be the same `Rc`. Drop the borrow on `links`</span>
-        <span class="comment">// before accessing `other` to avoid a already borrowed error from the</span>
-        <span class="comment">// `RefCell`.</span>
+        <span class="comment">// `this` and `other` may point to the same allocation. Drop the borrow</span>
+        <span class="comment">// on `links` before accessing `other` to avoid a already borrowed error</span>
+        <span class="comment">// from the `RefCell`.</span>
         <span class="ident">drop</span>(<span class="ident">links</span>);
         <span class="comment">// Remove a backward reference to `this` in `other`. This bookkeeping is</span>
         <span class="comment">// used for discovering cycles.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>();
+        <span class="comment">//</span>
+        <span class="comment">// SAFETY: `this` is a live `Rc` so the `links` on its inner allocation</span>
+        <span class="comment">// are an inhabited `MaybeUninit`.</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">links</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">other</span>.<span class="ident">inner</span>().<span class="ident">links</span>().<span class="ident">borrow_mut</span>() };
         <span class="ident">links</span>.<span class="ident">remove</span>(<span class="ident">Link::backward</span>(<span class="ident">this</span>.<span class="ident">ptr</span>), <span class="number">1</span>);
     }
 }
