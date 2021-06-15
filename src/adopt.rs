@@ -51,8 +51,9 @@ pub unsafe trait Adopt: sealed::Sealed {
     ///
     /// Callers must ensure that `this` owns a strong reference to `other`.
     ///
-    /// Callers must call [`unadopt`] when `this` no longer holds a strong
-    /// reference to `other`.
+    /// Callers should call [`unadopt`] when `this` no longer holds a strong
+    /// reference to `other` to avoid memory leaks, but this is not required for
+    /// soundness.
     ///
     /// [`unadopt`]: Adopt::unadopt
     unsafe fn adopt_unchecked(this: &Self, other: &Self);
@@ -67,14 +68,11 @@ pub unsafe trait Adopt: sealed::Sealed {
     /// `Adopt::unadopt(...)`. A method would interfere with methods of the same
     /// name on the contents of a `Rc` used through `Deref`.
     ///
-    /// # Safety
+    /// # Memory Leaks
     ///
-    /// Callers must ensure that `this` has removed an owned reference to
-    /// `other`.
-    ///
-    /// For each call to `Adopt::unadopt(&this, &other)`, callers must ensure
-    /// that a matching call was made to `Adopt::adopt_unchecked(&this, &other)`.
-    unsafe fn unadopt(this: &Self, other: &Self);
+    /// Failure to call this function when removing an owned `Rc` from `this`
+    /// is safe, but may result in a memory leak.
+    fn unadopt(this: &Self, other: &Self);
 }
 
 /// Implementation of [`Adopt`] for [`Rc`] which enables `Rc`s to form a cycle
@@ -97,8 +95,9 @@ unsafe impl<T> Adopt for Rc<T> {
     ///
     /// Callers must ensure that `this` owns a strong reference to `other`.
     ///
-    /// Callers must call [`unadopt`] when `this` no longer holds a strong
-    /// reference to `other`.
+    /// Callers should call [`unadopt`] when `this` no longer holds a strong
+    /// reference to `other` to avoid memory leaks, but this is not required for
+    /// soundness.
     ///
     /// Calling `adopt` does not increment the strong count of `other`. Callers
     /// must ensure that `other` has been cloned and stored in the `T` contained
@@ -137,22 +136,31 @@ unsafe impl<T> Adopt for Rc<T> {
     unsafe fn adopt_unchecked(this: &Self, other: &Self) {
         // Self-adoptions have no effect.
         if ptr::eq(this, other) {
-            // Store a forward reference to `other` in `this`. This bookkeeping logs
-            // a strong reference and is used for discovering cycles.
+            // Store a loopback reference to `other` in `this`. This bookkeeping
+            // logs a strong reference and is used for discovering cycles.
+            //
+            // SAFETY: `this` is a live `Rc` so the `links` on its inner
+            // allocation are an inhabited `MaybeUninit`.
             let mut links = this.inner().links().borrow_mut();
             links.insert(Link::loopback(other.ptr));
             return;
         }
         // Store a forward reference to `other` in `this`. This bookkeeping logs
         // a strong reference and is used for discovering cycles.
+        //
+        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
+        // are an inhabited `MaybeUninit`.
         let mut links = this.inner().links().borrow_mut();
         links.insert(Link::forward(other.ptr));
-        // `this` and `other` may be the same `Rc`. Drop the borrow on `links`
-        // before accessing `other` to avoid a already borrowed error from the
-        // `RefCell`.
+        // `this` and `other` may point to the same allocation. Drop the borrow
+        // on `links` before accessing `other` to avoid a already borrowed error
+        // from the `RefCell`.
         drop(links);
         // Store a backward reference to `this` in `other`. This bookkeeping is
         // used for discovering cycles.
+        //
+        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
+        // are an inhabited `MaybeUninit`.
         let mut links = other.inner().links().borrow_mut();
         links.insert(Link::backward(this.ptr));
     }
@@ -167,16 +175,10 @@ unsafe impl<T> Adopt for Rc<T> {
     /// `Adopt::unadopt(...)`. A method would interfere with methods of the same
     /// name on the contents of a `Rc` used through `Deref`.
     ///
-    /// # Safety
+    /// # Memory Leaks
     ///
-    /// Callers must ensure that `this` has removed an owned reference to
-    /// `other`.
-    ///
-    /// For each call to `Adopt::unadopt(&this, &other)`, callers must ensure
-    /// that a matching call was made to `Adopt::adopt_unchecked(&this, &other)`.
-    ///
-    /// This crate makes a best-effort attempt to abort the program if an access
-    /// to a dangling `Rc` occurs.
+    /// Failure to call this function when removing an owned `Rc` from `this`
+    /// is safe, but may result in a memory leak.
     ///
     /// # Examples
     ///
@@ -202,28 +204,45 @@ unsafe impl<T> Adopt for Rc<T> {
     /// let weak = Rc::downgrade(&array);
     /// // 1 for the array binding, 10 for the `Rc`s in buffer
     /// assert_eq!(Rc::strong_count(&array), 11);
+    ///
     /// let head = array.borrow_mut().buffer.pop().unwrap();
-    /// unsafe {
-    ///     Rc::unadopt(&array, &head);
-    /// }
+    /// Rc::unadopt(&array, &head);
+    ///
     /// drop(head);
     /// assert_eq!(Rc::strong_count(&array), 10);
     /// drop(array);
     /// assert!(weak.upgrade().is_none());
     /// assert_eq!(weak.weak_count(), 0);
     /// ```
-    unsafe fn unadopt(this: &Self, other: &Self) {
+    fn unadopt(this: &Self, other: &Self) {
+        // Self-adoptions have no effect.
+        if ptr::eq(this, other) {
+            // Remove a loopback reference to `other` in `this`. This bookkeeping
+            // logs a strong reference and is used for discovering cycles.
+            //
+            // SAFETY: `this` is a live `Rc` so the `links` on its inner
+            // allocation are an inhabited `MaybeUninit`.
+            let mut links = unsafe { this.inner().links().borrow_mut() };
+            links.remove(Link::loopback(other.ptr), 1);
+            return;
+        }
         // Remove a forward reference to `other` in `this`. This bookkeeping
         // removes a strong reference and is used for discovering cycles.
-        let mut links = this.inner().links().borrow_mut();
+        //
+        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
+        // are an inhabited `MaybeUninit`.
+        let mut links = unsafe { this.inner().links().borrow_mut() };
         links.remove(Link::forward(other.ptr), 1);
-        // `this` and `other` may be the same `Rc`. Drop the borrow on `links`
-        // before accessing `other` to avoid a already borrowed error from the
-        // `RefCell`.
+        // `this` and `other` may point to the same allocation. Drop the borrow
+        // on `links` before accessing `other` to avoid a already borrowed error
+        // from the `RefCell`.
         drop(links);
         // Remove a backward reference to `this` in `other`. This bookkeeping is
         // used for discovering cycles.
-        let mut links = other.inner().links().borrow_mut();
+        //
+        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
+        // are an inhabited `MaybeUninit`.
+        let mut links = unsafe { other.inner().links().borrow_mut() };
         links.remove(Link::backward(this.ptr), 1);
     }
 }
