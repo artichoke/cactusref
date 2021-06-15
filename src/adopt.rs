@@ -1,6 +1,7 @@
 use core::ptr;
 
 use crate::link::Link;
+use crate::trace::Trace;
 use crate::Rc;
 
 mod sealed {
@@ -34,6 +35,13 @@ mod sealed {
 /// [`adopt_unchecked`]: Adopt::adopt_unchecked
 /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 pub unsafe trait Adopt: sealed::Sealed {
+    /// The smart pointer's inner owned value.
+    type Inner;
+
+    fn adopt(this: &mut Self, other: &Self)
+    where
+        Self::Inner: Trace;
+
     /// Perform bookkeeping to record that `this` has an owned reference to
     /// `other`.
     ///
@@ -78,6 +86,46 @@ pub unsafe trait Adopt: sealed::Sealed {
 /// Implementation of [`Adopt`] for [`Rc`] which enables `Rc`s to form a cycle
 /// of strong references that are reaped by `Rc`'s [`Drop`] implementation.
 unsafe impl<T> Adopt for Rc<T> {
+    /// `Rc`'s inner owned value. For an `Rc<T>`, the inner owned value is a
+    /// `T`.
+    type Inner = T;
+
+    fn adopt(this: &mut Self, other: &Self)
+    where
+        Self::Inner: Trace,
+    {
+        // Use internal iteration on `this`'s owned `Rc`s to look for `other`.
+        //
+        // If `this` can yield a mutable reference to an `Rc` that has the same
+        // inner allocation as `other`, we can safely assert that `this` owns
+        // an `Rc` with the same `RcBox` as `other`.
+        let needle = other.inner() as *const _;
+        let mut found = None;
+        Trace::yield_owned_rcs(this.as_ref(), |node| {
+            if found.is_some() {
+                return;
+            }
+            // If `this` yields an `Rc` with the same `RcBox` as the given
+            // `other`, `this` owns a `Rc` that points to the same allocation as
+            // `other`, which fulfills the safety invariant of `adopt_unchecked`.
+            if ptr::eq(needle, node.inner()) {
+                // Clone the node we've found that matches the needle so we can
+                // save a reference to the `RcBox` we want to adopt.
+                found = Some(Rc::clone(node));
+            }
+        });
+        if let Some(node) = found {
+            // SAFETY: `yield_owned_rcs` yielded a mutable reference to an `Rc`
+            // matching `other`'s inner allocation, which means `this` must own
+            // an `Rc` matching `other`.
+            //
+            // This uphold's adopt_unchecked's safety invariant.
+            unsafe {
+                Self::adopt_unchecked(this, &node);
+            }
+        }
+    }
+
     /// Perform bookkeeping to record that `this` has an owned reference to
     /// `other`.
     ///
