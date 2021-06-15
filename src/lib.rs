@@ -39,19 +39,13 @@
 //! # Nightly
 //!
 //! CactusRef depends on several unstable Rust features and can only be built
-//! on a nightly toolchain. CactusRef reimplements several compiler internals
-//! from [alloc], which means it is only safe to build CactusRef with the same
-//! nightly compiler as the one pinned in its `rust-toolchain` file.
-//!
-//! [alloc]: https://doc.rust-lang.org/stable/alloc/
+//! on a nightly toolchain.
 //!
 //! # Maturity
 //!
 //! CactusRef is experimental. This crate has several limitations:
 //!
 //! - CactusRef is nightly only.
-//! - CactusRef reimplements several `alloc` internals which means it may not be
-//!   safe to use on newer nightly versions than `nightly-2021-06-13`.
 //! - Cycle detection requires [unsafe code][adopt-api] to use.
 //!
 //! CactusRef is a non-trivial extension to `std::rc::Rc` and has not been

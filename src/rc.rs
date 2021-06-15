@@ -242,7 +242,7 @@ use core::cmp::Ordering;
 use core::convert::From;
 use core::fmt;
 use core::hash::{Hash, Hasher};
-use core::intrinsics::{abort, min_align_of_val};
+use core::intrinsics::abort;
 use core::marker::{PhantomData, Unpin};
 use core::mem::{self, ManuallyDrop, MaybeUninit};
 use core::ops::Deref;
@@ -250,7 +250,7 @@ use core::pin::Pin;
 use core::ptr::{self, NonNull};
 
 use alloc::alloc::handle_alloc_error;
-use alloc::alloc::{AllocError, Allocator, Global, Layout};
+use alloc::alloc::{dealloc, AllocError, Allocator, Global, Layout};
 use alloc::boxed::Box;
 
 use crate::link::Links;
@@ -1894,15 +1894,20 @@ unsafe fn data_offset<T>(ptr: *const T) -> isize {
     (field_ptr - base_ptr) as isize
 }
 
+// Deallocate a `Box` without destroying the inner `T`.
+//
+// # Safety
+//
+// Callers must ensure that `ptr` was allocated by `Box::new` with the global allocator.
+//
+// Callers must ensure that `T` is not dropped.
 #[inline]
-// This signature has to be the same as `Box`, otherwise an ICE will happen.
-// When an additional parameter to `Box` is added (like `A: Allocator`), this has to be added here as
-// well.
-// For example if `Box` is changed to  `struct Box<T: ?Sized, A: Allocator>(Unique<T>, A)`,
-// this function has to be changed to `fn box_free<T: ?Sized, A: Allocator>(Unique<T>, A)` as well.
-pub(crate) unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: NonNull<T>, alloc: A) {
-    let size = mem::size_of_val(ptr.as_ref());
-    let align = min_align_of_val(ptr.as_ref());
-    let layout = Layout::from_size_align_unchecked(size, align);
-    alloc.deallocate(ptr.cast(), layout);
+unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: NonNull<T>, alloc: A) {
+    let _ignored = alloc;
+
+    // SAFETY: this function requires the allocated `T` behind `ptr` to not be
+    // dropped, so it is safe to convert the `NonNull<T>` to a `&T`.
+    let layout = Layout::for_value(ptr.as_ref());
+
+    dealloc(ptr.as_ptr().cast(), layout);
 }

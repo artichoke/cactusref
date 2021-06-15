@@ -128,8 +128,6 @@ drop(right);
 CactusRef is experimental. This crate has several limitations:
 
 - CactusRef is nightly only.
-- CactusRef reimplements several `alloc` internals which means it may not be
-  safe to use on newer nightly versions than `nightly-2021-06-13`.
 - Cycle detection requires [unsafe code][adopt-api] to use.
 
 CactusRef is a non-trivial extension to `std::rc::Rc` and has not been proven to
