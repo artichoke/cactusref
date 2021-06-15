@@ -1,3 +1,5 @@
+use alloc::vec;
+
 use crate::hash::{HashMap, HashSet};
 use crate::link::{Kind, Link};
 use crate::rc::RcInnerPtr;
@@ -71,6 +73,8 @@ fn cycle_refs<T>(this: Link<T>) -> HashMap<Link<T>, usize> {
 
 #[cfg(debug_assertions)]
 fn debug_cycle<T>(cycle: &HashMap<Link<T>, usize>) {
+    use alloc::vec::Vec;
+
     if cycle.is_empty() {
         trace!("cactusref reachability test found no cycles");
         return;

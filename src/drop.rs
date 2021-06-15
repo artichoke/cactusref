@@ -1,6 +1,7 @@
 use alloc::alloc::{Allocator, Global, Layout};
+use alloc::vec;
+use core::mem::{self, MaybeUninit};
 use core::ptr;
-use std::mem::{self, MaybeUninit};
 
 use crate::hash::HashMap;
 use crate::link::{Kind, Link};

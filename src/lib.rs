@@ -120,6 +120,7 @@
 //! [`std::rc::Rc`]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html
 
 #![doc(html_root_url = "https://docs.rs/cactusref/0.1.1")]
+#![no_std]
 
 // Ensure code blocks in README.md compile
 #[cfg(doctest)]
@@ -127,6 +128,8 @@
 mod readme {}
 
 extern crate alloc;
+#[cfg(any(feature = "std", test, doctest, miri))]
+extern crate std;
 #[macro_use]
 extern crate log;
 
