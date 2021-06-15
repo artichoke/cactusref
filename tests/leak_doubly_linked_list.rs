@@ -37,7 +37,7 @@ struct Node<T> {
 impl<T> Trace for NodeCell<T> {
     fn yield_owned_rcs<F>(&self, mut mark: F)
     where
-        F: for<'a> FnMut(&'a mut Rc<Self>),
+        F: FnMut(&mut Rc<Self>),
     {
         if let Some(ref mut prev) = self.borrow_mut().prev {
             mark(prev);
