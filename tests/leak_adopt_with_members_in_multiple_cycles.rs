@@ -16,12 +16,12 @@ fn leak_adopt_with_members_in_multiple_cycles() {
     for _ in 1..10 {
         let obj = Rc::new(s.clone());
         unsafe {
-            Rc::adopt(&obj, &last);
+            Rc::adopt_unchecked(&obj, &last);
         }
         last = obj;
     }
     unsafe {
-        Rc::adopt(&first, &last);
+        Rc::adopt_unchecked(&first, &last);
     }
     let group1 = first;
     let first = Rc::new(s.clone());
@@ -29,18 +29,18 @@ fn leak_adopt_with_members_in_multiple_cycles() {
     for _ in 101..110 {
         let obj = Rc::new(s.clone());
         unsafe {
-            Rc::adopt(&obj, &last);
+            Rc::adopt_unchecked(&obj, &last);
         }
         last = obj;
     }
     unsafe {
-        Rc::adopt(&first, &last);
+        Rc::adopt_unchecked(&first, &last);
     }
     let group2 = first;
     // join the two cycles
     unsafe {
-        Rc::adopt(&group2, &group1);
-        Rc::adopt(&group1, &group2);
+        Rc::adopt_unchecked(&group2, &group1);
+        Rc::adopt_unchecked(&group1, &group2);
     }
     drop(last);
     drop(group2);

@@ -44,7 +44,7 @@ pub unsafe trait Adopt: sealed::Sealed {
     /// `adopt` indicates that `this` owns one distinct clone of `other`.
     ///
     /// This is an associated function that needs to be used as
-    /// `Adopt::adopt(...)`. A method would interfere with methods of the same
+    /// `Adopt::adopt_unchecked(...)`. A method would interfere with methods of the same
     /// name on the contents of a `Rc` used through `Deref`.
     ///
     /// # Safety
@@ -55,7 +55,7 @@ pub unsafe trait Adopt: sealed::Sealed {
     /// reference to `other`.
     ///
     /// [`unadopt`]: Adopt::unadopt
-    unsafe fn adopt(this: &Self, other: &Self);
+    unsafe fn adopt_unchecked(this: &Self, other: &Self);
 
     /// Perform bookkeeping to record that `this` has removed an owned reference
     /// to `other`.
@@ -73,7 +73,7 @@ pub unsafe trait Adopt: sealed::Sealed {
     /// `other`.
     ///
     /// For each call to `Adopt::unadopt(&this, &other)`, callers must ensure
-    /// that a matching call was made to `Adopt::adopt(&this, &other)`.
+    /// that a matching call was made to `Adopt::adopt_unchecked(&this, &other)`.
     unsafe fn unadopt(this: &Self, other: &Self);
 }
 
@@ -90,7 +90,7 @@ unsafe impl<T> Adopt for Rc<T> {
     /// `adopt` indicates that `this` owns one distinct clone of `other`.
     ///
     /// This is an associated function that needs to be used as
-    /// `Rc::adopt(...)`. A method would interfere with methods of the same
+    /// `Rc::adopt_unchecked(...)`. A method would interfere with methods of the same
     /// name on the contents of a `Rc` used through `Deref`.
     ///
     /// # Safety
@@ -121,7 +121,7 @@ unsafe impl<T> Adopt for Rc<T> {
     /// for _ in 0..10 {
     ///     let item = Rc::clone(&array);
     ///     unsafe {
-    ///         Rc::adopt(&array, &item);
+    ///         Rc::adopt_unchecked(&array, &item);
     ///     }
     ///     array.borrow_mut().buffer.push(item);
     /// }
@@ -134,7 +134,7 @@ unsafe impl<T> Adopt for Rc<T> {
     /// ```
     ///
     /// [`unadopt`]: Rc::unadopt
-    unsafe fn adopt(this: &Self, other: &Self) {
+    unsafe fn adopt_unchecked(this: &Self, other: &Self) {
         // Self-adoptions have no effect.
         if ptr::eq(this, other) {
             // Store a forward reference to `other` in `this`. This bookkeeping logs
@@ -173,7 +173,7 @@ unsafe impl<T> Adopt for Rc<T> {
     /// `other`.
     ///
     /// For each call to `Adopt::unadopt(&this, &other)`, callers must ensure
-    /// that a matching call was made to `Adopt::adopt(&this, &other)`.
+    /// that a matching call was made to `Adopt::adopt_unchecked(&this, &other)`.
     ///
     /// This crate makes a best-effort attempt to abort the program if an access
     /// to a dangling `Rc` occurs.
@@ -195,7 +195,7 @@ unsafe impl<T> Adopt for Rc<T> {
     /// for _ in 0..10 {
     ///     let item = Rc::clone(&array);
     ///     unsafe {
-    ///         Rc::adopt(&array, &item);
+    ///         Rc::adopt_unchecked(&array, &item);
     ///     }
     ///     array.borrow_mut().buffer.push(item);
     /// }

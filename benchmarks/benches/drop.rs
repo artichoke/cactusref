@@ -28,7 +28,7 @@ fn chain_with_adoptions(count: usize) -> Rc<RefCell<Node>> {
             links: vec![Rc::clone(&last)],
         }));
         unsafe {
-            Rc::adopt(&obj, &last);
+            Rc::adopt_unchecked(&obj, &last);
         }
         last = obj;
     }
@@ -43,13 +43,13 @@ fn circular_graph(count: usize) -> Rc<RefCell<Node>> {
             links: vec![Rc::clone(&last)],
         }));
         unsafe {
-            Rc::adopt(&obj, &last);
+            Rc::adopt_unchecked(&obj, &last);
         }
         last = obj;
     }
     first.borrow_mut().links.push(Rc::clone(&last));
     unsafe {
-        Rc::adopt(&first, &last);
+        Rc::adopt_unchecked(&first, &last);
     }
     first
 }
@@ -64,7 +64,7 @@ fn fully_connected_graph(count: usize) -> Rc<RefCell<Node>> {
             let link = Rc::clone(right);
             left.borrow_mut().links.push(link);
             unsafe {
-                Rc::adopt(left, &right);
+                Rc::adopt_unchecked(left, &right);
             }
         }
     }

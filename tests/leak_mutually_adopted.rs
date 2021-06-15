@@ -14,8 +14,8 @@ fn leak_mutually_adopted() {
     let first = Rc::new(s.clone());
     let last = Rc::new(s);
     unsafe {
-        Rc::adopt(&first, &last);
-        Rc::adopt(&last, &first);
+        Rc::adopt_unchecked(&first, &last);
+        Rc::adopt_unchecked(&last, &first);
     }
     drop(first);
     drop(last);

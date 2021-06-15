@@ -61,8 +61,8 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     /// let foo2 = Rc::new(Foo(20));
     ///
     /// unsafe {
-    ///     Rc::adopt(&foo, &foo2);
-    ///     Rc::adopt(&foo2, &foo);
+    ///     Rc::adopt_unchecked(&foo, &foo2);
+    ///     Rc::adopt_unchecked(&foo2, &foo);
     /// }
     ///
     /// drop(foo);    // Doesn't print anything

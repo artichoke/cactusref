@@ -23,14 +23,14 @@ fn leak_adopt_self() {
     }));
     let clone = Rc::clone(&first);
     unsafe {
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
-        Rc::adopt(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
+        Rc::adopt_unchecked(&first, &clone);
     }
     first.borrow_mut().link = Some(clone);
     assert_eq!(first.borrow().inner, s);

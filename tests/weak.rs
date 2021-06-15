@@ -17,7 +17,7 @@ fn weak() {
     for _ in 0..10 {
         let item = Rc::clone(&array);
         unsafe {
-            Rc::adopt(&array, &item);
+            Rc::adopt_unchecked(&array, &item);
         }
         array.borrow_mut().buffer.push(item);
     }
