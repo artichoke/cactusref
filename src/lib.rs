@@ -89,7 +89,7 @@
 //! can deallocate a cycle of strong references that is otherwise unreachable
 //! from the rest of the object graph, unlike [`std::rc::Rc`].
 //!
-//! `CactusRef` relies on proper use of [`Adopt::adopt`] and [`Adopt::unadopt`]
+//! `CactusRef` relies on proper use of [`Adopt::adopt_unchecked`] and [`Adopt::unadopt`]
 //! to maintain bookkeeping about the object graph for breaking cycles. These
 //! functions are unsafe because improperly managing the bookkeeping can cause
 //! the `Rc` drop implementation to deallocate cycles while they are still

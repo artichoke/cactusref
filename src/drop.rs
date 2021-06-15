@@ -22,9 +22,9 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     /// held by `Rc`s outside of the cycle.
     ///
     /// `Rc`s do not pay the cost of the reachability check unless they use
-    /// [`Adopt::adopt`].
+    /// [`Adopt::adopt_unchecked`].
     ///
-    /// [`Adopt::adopt`]: crate::Adopt::adopt
+    /// [`Adopt::adopt_unchecked`]: crate::Adopt::adopt_unchecked
     ///
     /// # Examples
     ///
@@ -71,19 +71,19 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
     ///
     /// # Cycle Detection and Deallocation Algorithm
     ///
-    /// [`Rc::adopt`] does explicit bookkeeping to store links to adoptee `Rc`s.
-    /// These links form a graph of reachable objects which are used to detect
-    /// cycles.
+    /// [`Rc::adopt_unchecked`] does explicit bookkeeping to store links to
+    /// adoptee `Rc`s.  These links form a graph of reachable objects which are
+    /// used to detect cycles.
     ///
-    /// [`Rc::adopt`]: crate::Rc::adopt
+    /// [`Rc::adopt_unchecked`]: crate::Rc::adopt_unchecked
     ///
     /// On drop, if an `Rc` has no links, it is dropped like a normal `Rc`. If
     /// the `Rc` has links, `Drop` performs a breadth first search by traversing
     /// the forward and backward links stored in each `Rc`. Deallocating cycles
-    /// requires correct use of [`Adopt::adopt`] and [`Adopt::unadopt`] to
-    /// perform the reachability bookkeeping.
+    /// requires correct use of [`Adopt::adopt_unchecked`] and [`Adopt::unadopt`]
+    /// to perform the reachability bookkeeping.
     ///
-    /// [`Adopt::adopt`]: crate::Adopt::adopt
+    /// [`Adopt::adopt_unchecked`]: crate::Adopt::adopt_unchecked
     /// [`Adopt::unadopt`]: crate::Adopt::unadopt
     ///
     /// After determining all reachable objects, `Rc` reduces the graph to

@@ -15,8 +15,8 @@ mod sealed {
 /// Build a graph of linked [`Rc`] smart pointers to enable busting cycles on
 /// drop.
 ///
-/// Calling [`adopt`] builds an object graph which can be used by to detect
-/// cycles.
+/// Calling [`adopt_unchecked`] builds an object graph which can be used by to
+/// detect cycles.
 ///
 /// # Safety
 ///
@@ -31,7 +31,7 @@ mod sealed {
 /// - Double-frees.
 /// - Dangling `Rc`s which will cause a use after free.`
 ///
-/// [`adopt`]: Adopt::adopt
+/// [`adopt_unchecked`]: Adopt::adopt_unchecked
 /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 pub unsafe trait Adopt: sealed::Sealed {
     /// Perform bookkeeping to record that `this` has an owned reference to
