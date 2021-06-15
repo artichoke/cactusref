@@ -1,3 +1,4 @@
+use core::fmt;
 use core::ptr;
 
 use crate::link::Link;
@@ -11,6 +12,21 @@ mod sealed {
     pub trait Sealed {}
 
     impl<T> Sealed for Rc<T> {}
+}
+
+/// The error type for `try_adopt` methods.
+///
+/// See [`Adopt::try_adopt`] for more information.
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct AdoptError(());
+
+#[cfg(feature = "std")]
+impl std::error::Error for AdoptError {}
+
+impl fmt::Display for AdoptError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("Rc adoption failed because the Rc does not own a pointer to the adoptee")
+    }
 }
 
 /// Build a graph of linked [`Rc`] smart pointers to enable busting cycles on
@@ -34,12 +50,20 @@ mod sealed {
 ///
 /// [`adopt_unchecked`]: Adopt::adopt_unchecked
 /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
-pub unsafe trait Adopt: sealed::Sealed {
+pub unsafe trait Adopt: sealed::Sealed + Sized {
     /// The smart pointer's inner owned value.
     type Inner;
 
     /// TODO: document me!
-    fn adopt(this: &mut Self, other: &Self)
+    fn adopt(this: &mut Self, other: &Self) -> Self
+    where
+        Self::Inner: Trace,
+    {
+        Self::try_adopt(this, other).unwrap_or_else(|err| panic!("{}", err))
+    }
+
+    /// TODO: document me!
+    fn try_adopt(this: &mut Self, other: &Self) -> Result<Self, AdoptError>
     where
         Self::Inner: Trace;
 
@@ -92,7 +116,7 @@ unsafe impl<T> Adopt for Rc<T> {
     type Inner = T;
 
     /// TODO: document me!
-    fn adopt(this: &mut Self, other: &Self)
+    fn try_adopt(this: &mut Self, other: &Self) -> Result<Self, AdoptError>
     where
         Self::Inner: Trace,
     {
@@ -125,6 +149,9 @@ unsafe impl<T> Adopt for Rc<T> {
             unsafe {
                 Self::adopt_unchecked(this, &node);
             }
+            Ok(node)
+        } else {
+            Err(AdoptError(()))
         }
     }
 

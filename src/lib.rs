@@ -148,6 +148,7 @@ mod trace;
 pub mod implementing_self_referential_data_structures;
 
 pub use adopt::Adopt;
+pub use adopt::AdoptError;
 pub use rc::Rc;
 pub use rc::Weak;
 pub use trace::Trace;
