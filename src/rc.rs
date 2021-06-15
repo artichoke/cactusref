@@ -250,7 +250,7 @@ use core::pin::Pin;
 use core::ptr::{self, NonNull};
 
 use alloc::alloc::handle_alloc_error;
-use alloc::alloc::{dealloc, AllocError, Allocator, Global, Layout};
+use alloc::alloc::{AllocError, Allocator, Global, Layout};
 use alloc::boxed::Box;
 
 use crate::link::Links;
@@ -987,8 +987,10 @@ impl<T> Rc<T> {
 
     fn from_box(v: Box<T>) -> Rc<T> {
         unsafe {
-            // SAFETY: `Box` is always a non-null pointer.
-            let box_unique = NonNull::new_unchecked(Box::into_raw(v));
+            let (box_unique, alloc) = Box::into_raw_with_allocator(v);
+            // SAFETY: Pointers obtained from `Box::into_raw` are always
+            // non-null.
+            let box_unique = NonNull::new_unchecked(box_unique);
             let box_ptr = box_unique.as_ptr();
 
             let value_size = mem::size_of_val(&*box_ptr);
@@ -1002,9 +1004,7 @@ impl<T> Rc<T> {
             );
 
             // Free the allocation without dropping its contents
-            //
-            // SAFETY: CactusRef assumes the global allocator.
-            box_free(box_unique, Global);
+            box_free(box_unique, alloc);
 
             Self::from_ptr(ptr)
         }
@@ -1903,11 +1903,9 @@ unsafe fn data_offset<T>(ptr: *const T) -> isize {
 // Callers must ensure that `T` is not dropped.
 #[inline]
 unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: NonNull<T>, alloc: A) {
-    let _ignored = alloc;
-
     // SAFETY: this function requires the allocated `T` behind `ptr` to not be
     // dropped, so it is safe to convert the `NonNull<T>` to a `&T`.
     let layout = Layout::for_value(ptr.as_ref());
 
-    dealloc(ptr.as_ptr().cast(), layout);
+    alloc.deallocate(ptr.cast(), layout);
 }
