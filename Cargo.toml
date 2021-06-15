@@ -13,6 +13,12 @@ keywords = ["garbage-collection", "gc", "pointer", "rc", "tracing"]
 categories = ["data-structures", "memory-management", "no-std"]
 include = ["src/**/*", "tests/**/*", "LICENSE", "README.md"]
 
+[features]
+default = ["std"]
+# Enable a dependency on the Rust standard library. CactusRef uses `std` to
+# optionally implement `std::error::Error` on error types in this crate.
+std = []
+
 [dependencies]
 hashbrown = { version = "0.11", default-features = false, features = ["inline-more"] }
 log = "0.4.6"

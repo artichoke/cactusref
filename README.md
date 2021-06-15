@@ -136,6 +136,22 @@ detects a dangling `Rc`, this crate may be unsound.
 
 [adopt-api]: https://docs.rs/cactusref/*/cactusref/trait.Adopt.html
 
+## `no_std`
+
+CactusRef is `no_std` compatible with an optional and enabled by default
+dependency on `std`. CactusRef depends on the [`alloc`] crate.
+
+[`alloc`]: https://doc.rust-lang.org/alloc/
+
+## Crate features
+
+All features are enabled by default.
+
+- **std** - Enable linking to the [Rust Standard Library]. Enabling this feature
+  adds [`Error`] implementations to error types in this crate.
+
+[`error`]: https://doc.rust-lang.org/stable/std/error/trait.Error.html
+
 ## License
 
 CactusRef is licensed with the [MIT License](LICENSE) (c) Ryan Lopopolo.
