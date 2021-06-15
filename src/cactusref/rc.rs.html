@@ -1908,6 +1908,11 @@
 <span id="1906">1906</span>
 <span id="1907">1907</span>
 <span id="1908">1908</span>
+<span id="1909">1909</span>
+<span id="1910">1910</span>
+<span id="1911">1911</span>
+<span id="1912">1912</span>
+<span id="1913">1913</span>
 </pre><pre class="rust">
 <span class="doccomment">//! Single-threaded reference-counting pointers. &#39;Rc&#39; stands for &#39;Reference</span>
 <span class="doccomment">//! Counted&#39;.</span>
@@ -2153,7 +2158,7 @@
 <span class="kw">use</span> <span class="ident">core::convert::From</span>;
 <span class="kw">use</span> <span class="ident">core::fmt</span>;
 <span class="kw">use</span> <span class="ident">core::hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
-<span class="kw">use</span> <span class="ident">core::intrinsics</span>::{<span class="ident">abort</span>, <span class="ident">min_align_of_val</span>};
+<span class="kw">use</span> <span class="ident">core::intrinsics::abort</span>;
 <span class="kw">use</span> <span class="ident">core::marker</span>::{<span class="ident">PhantomData</span>, <span class="ident">Unpin</span>};
 <span class="kw">use</span> <span class="ident">core::mem</span>::{<span class="self">self</span>, <span class="ident">ManuallyDrop</span>, <span class="ident">MaybeUninit</span>};
 <span class="kw">use</span> <span class="ident">core::ops::Deref</span>;
@@ -2161,7 +2166,7 @@
 <span class="kw">use</span> <span class="ident">core::ptr</span>::{<span class="self">self</span>, <span class="ident">NonNull</span>};
 
 <span class="kw">use</span> <span class="ident">alloc::alloc::handle_alloc_error</span>;
-<span class="kw">use</span> <span class="ident">alloc::alloc</span>::{<span class="ident">AllocError</span>, <span class="ident">Allocator</span>, <span class="ident">Global</span>, <span class="ident">Layout</span>};
+<span class="kw">use</span> <span class="ident">alloc::alloc</span>::{<span class="ident">dealloc</span>, <span class="ident">AllocError</span>, <span class="ident">Allocator</span>, <span class="ident">Global</span>, <span class="ident">Layout</span>};
 <span class="kw">use</span> <span class="ident">alloc::boxed::Box</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::link::Links</span>;
@@ -3805,17 +3810,22 @@
     (<span class="ident">field_ptr</span> <span class="op">-</span> <span class="ident">base_ptr</span>) <span class="kw">as</span> <span class="ident">isize</span>
 }
 
+<span class="comment">// Deallocate a `Box` without destroying the inner `T`.</span>
+<span class="comment">//</span>
+<span class="comment">// # Safety</span>
+<span class="comment">//</span>
+<span class="comment">// Callers must ensure that `ptr` was allocated by `Box::new` with the global allocator.</span>
+<span class="comment">//</span>
+<span class="comment">// Callers must ensure that `T` is not dropped.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="comment">// This signature has to be the same as `Box`, otherwise an ICE will happen.</span>
-<span class="comment">// When an additional parameter to `Box` is added (like `A: Allocator`), this has to be added here as</span>
-<span class="comment">// well.</span>
-<span class="comment">// For example if `Box` is changed to  `struct Box&lt;T: ?Sized, A: Allocator&gt;(Unique&lt;T&gt;, A)`,</span>
-<span class="comment">// this function has to be changed to `fn box_free&lt;T: ?Sized, A: Allocator&gt;(Unique&lt;T&gt;, A)` as well.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">box_free</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">A</span>: <span class="ident">Allocator</span><span class="op">&gt;</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">alloc</span>: <span class="ident">A</span>) {
-    <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">mem::size_of_val</span>(<span class="ident">ptr</span>.<span class="ident">as_ref</span>());
-    <span class="kw">let</span> <span class="ident">align</span> <span class="op">=</span> <span class="ident">min_align_of_val</span>(<span class="ident">ptr</span>.<span class="ident">as_ref</span>());
-    <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::from_size_align_unchecked</span>(<span class="ident">size</span>, <span class="ident">align</span>);
-    <span class="ident">alloc</span>.<span class="ident">deallocate</span>(<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">layout</span>);
+<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">box_free</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">A</span>: <span class="ident">Allocator</span><span class="op">&gt;</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">alloc</span>: <span class="ident">A</span>) {
+    <span class="kw">let</span> <span class="ident">_ignored</span> <span class="op">=</span> <span class="ident">alloc</span>;
+
+    <span class="comment">// SAFETY: this function requires the allocated `T` behind `ptr` to not be</span>
+    <span class="comment">// dropped, so it is safe to convert the `NonNull&lt;T&gt;` to a `&amp;T`.</span>
+    <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value</span>(<span class="ident">ptr</span>.<span class="ident">as_ref</span>());
+
+    <span class="ident">dealloc</span>(<span class="ident">ptr</span>.<span class="ident">as_ptr</span>().<span class="ident">cast</span>(), <span class="ident">layout</span>);
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="cactusref" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>

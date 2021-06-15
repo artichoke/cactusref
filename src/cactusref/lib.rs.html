@@ -154,12 +154,6 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
 </pre><pre class="rust">
 <span class="attribute">#![<span class="ident">feature</span>(
     <span class="ident">allocator_api</span>,
@@ -202,19 +196,13 @@
 <span class="doccomment">//! # Nightly</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! CactusRef depends on several unstable Rust features and can only be built</span>
-<span class="doccomment">//! on a nightly toolchain. CactusRef reimplements several compiler internals</span>
-<span class="doccomment">//! from [alloc], which means it is only safe to build CactusRef with the same</span>
-<span class="doccomment">//! nightly compiler as the one pinned in its `rust-toolchain` file.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! [alloc]: https://doc.rust-lang.org/stable/alloc/</span>
+<span class="doccomment">//! on a nightly toolchain.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! # Maturity</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! CactusRef is experimental. This crate has several limitations:</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! - CactusRef is nightly only.</span>
-<span class="doccomment">//! - CactusRef reimplements several `alloc` internals which means it may not be</span>
-<span class="doccomment">//!   safe to use on newer nightly versions than `nightly-2021-06-13`.</span>
 <span class="doccomment">//! - Cycle detection requires [unsafe code][adopt-api] to use.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! CactusRef is a non-trivial extension to `std::rc::Rc` and has not been</span>
