@@ -1,6 +1,7 @@
-use core::ptr;
+use alloc::boxed::Box;
+use core::ptr::{self, NonNull};
 
-use crate::link::Link;
+use crate::graph::Graph;
 use crate::Rc;
 
 mod sealed {
@@ -134,35 +135,36 @@ unsafe impl<T> Adopt for Rc<T> {
     ///
     /// [`unadopt`]: Rc::unadopt
     unsafe fn adopt_unchecked(this: &Self, other: &Self) {
-        // Self-adoptions have no effect.
         if ptr::eq(this, other) {
-            // Store a loopback reference to `other` in `this`. This bookkeeping
-            // logs a strong reference and is used for discovering cycles.
-            //
-            // SAFETY: `this` is a live `Rc` so the `links` on its inner
-            // allocation are an inhabited `MaybeUninit`.
-            let mut links = this.inner().links().borrow_mut();
-            links.insert(Link::loopback(other.ptr));
             return;
         }
-        // Store a forward reference to `other` in `this`. This bookkeeping logs
-        // a strong reference and is used for discovering cycles.
-        //
-        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
-        // are an inhabited `MaybeUninit`.
-        let mut links = this.inner().links().borrow_mut();
-        links.insert(Link::forward(other.ptr));
-        // `this` and `other` may point to the same allocation. Drop the borrow
-        // on `links` before accessing `other` to avoid a already borrowed error
-        // from the `RefCell`.
-        drop(links);
-        // Store a backward reference to `this` in `other`. This bookkeeping is
-        // used for discovering cycles.
-        //
-        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
-        // are an inhabited `MaybeUninit`.
-        let mut links = other.inner().links().borrow_mut();
-        links.insert(Link::backward(this.ptr));
+        match (this.inner().graph.get(), other.inner().graph.get()) {
+            (Some(mut left), Some(right)) if left == right => {
+                (*left.as_mut()).link(this.ptr, other.ptr);
+            }
+            (Some(mut left), Some(right)) => {
+                let right = Box::from_raw(right.as_ptr());
+                (*left.as_mut()).merge(right);
+                (*left.as_mut()).link(this.ptr, other.ptr);
+            }
+            (None, Some(mut right)) => {
+                this.inner().graph.set(Some(right));
+                (*right.as_mut()).link(this.ptr, other.ptr);
+            }
+            (Some(mut left), None) => {
+                other.inner().graph.set(Some(left));
+                (*left.as_mut()).link(this.ptr, other.ptr);
+            }
+            (None, None) => {
+                let mut graph = Graph::new();
+                graph.link(this.ptr, other.ptr);
+                let graph = Box::new(graph);
+                let graph = Box::into_raw(graph);
+                let graph = NonNull::new_unchecked(graph);
+                this.inner().graph.set(Some(graph));
+                other.inner().graph.set(Some(graph));
+            }
+        }
     }
 
     /// Perform bookkeeping to record that `this` has removed an owned reference
@@ -215,34 +217,10 @@ unsafe impl<T> Adopt for Rc<T> {
     /// assert_eq!(weak.weak_count(), 0);
     /// ```
     fn unadopt(this: &Self, other: &Self) {
-        // Self-adoptions have no effect.
-        if ptr::eq(this, other) {
-            // Remove a loopback reference to `other` in `this`. This bookkeeping
-            // logs a strong reference and is used for discovering cycles.
-            //
-            // SAFETY: `this` is a live `Rc` so the `links` on its inner
-            // allocation are an inhabited `MaybeUninit`.
-            let mut links = unsafe { this.inner().links().borrow_mut() };
-            links.remove(Link::loopback(other.ptr), 1);
-            return;
+        if let Some(mut graph) = this.inner().graph.get() {
+            unsafe {
+                (*graph.as_mut()).unlink(this.ptr, other.ptr);
+            }
         }
-        // Remove a forward reference to `other` in `this`. This bookkeeping
-        // removes a strong reference and is used for discovering cycles.
-        //
-        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
-        // are an inhabited `MaybeUninit`.
-        let mut links = unsafe { this.inner().links().borrow_mut() };
-        links.remove(Link::forward(other.ptr), 1);
-        // `this` and `other` may point to the same allocation. Drop the borrow
-        // on `links` before accessing `other` to avoid a already borrowed error
-        // from the `RefCell`.
-        drop(links);
-        // Remove a backward reference to `this` in `other`. This bookkeeping is
-        // used for discovering cycles.
-        //
-        // SAFETY: `this` is a live `Rc` so the `links` on its inner allocation
-        // are an inhabited `MaybeUninit`.
-        let mut links = unsafe { other.inner().links().borrow_mut() };
-        links.remove(Link::backward(this.ptr), 1);
     }
 }

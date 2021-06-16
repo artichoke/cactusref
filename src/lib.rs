@@ -139,11 +139,9 @@ extern crate std;
 extern crate log;
 
 mod adopt;
-mod cycle;
 mod drop;
 mod graph;
 mod hash;
-mod link;
 mod rc;
 
 // Doc modules

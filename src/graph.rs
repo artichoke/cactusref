@@ -7,8 +7,8 @@ use core::ptr::NonNull;
 use crate::hash::HashSet;
 use crate::rc::{RcBox, RcInnerPtr};
 
-struct Source<T> {
-    inner: NonNull<RcBox<T>>,
+pub(crate) struct Source<T> {
+    pub inner: NonNull<RcBox<T>>,
 }
 
 impl<T> Clone for Source<T> {
@@ -46,18 +46,18 @@ impl<T> Source<T> {
     }
 
     #[inline]
-    fn as_ptr(&self) -> *const RcBox<T> {
+    pub fn as_ptr(&self) -> *const RcBox<T> {
         self.inner.as_ptr()
     }
 
     #[inline]
-    fn as_mut_ptr(&self) -> *mut RcBox<T> {
+    pub fn as_mut_ptr(&self) -> *mut RcBox<T> {
         self.inner.as_ptr()
     }
 }
 
-struct Destination<T> {
-    inner: NonNull<RcBox<T>>,
+pub(crate) struct Destination<T> {
+    pub inner: NonNull<RcBox<T>>,
 }
 
 impl<T> Clone for Destination<T> {
@@ -95,18 +95,24 @@ impl<T> Destination<T> {
     }
 
     #[inline]
-    fn as_ptr(&self) -> *const RcBox<T> {
+    pub fn as_ptr(&self) -> *const RcBox<T> {
         self.inner.as_ptr()
     }
 
     #[inline]
-    fn as_mut_ptr(&self) -> *mut RcBox<T> {
+    pub fn as_mut_ptr(&self) -> *mut RcBox<T> {
         self.inner.as_ptr()
     }
 }
 
 pub(crate) struct Graph<T> {
-    edges: Vec<(Source<T>, Destination<T>)>,
+    pub edges: Vec<(Source<T>, Destination<T>)>,
+}
+
+impl<T> fmt::Debug for Graph<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Graph").field("edges", &self.edges).finish()
+    }
 }
 
 impl<T> Graph<T> {
@@ -148,10 +154,10 @@ impl<T> Graph<T> {
         self.edges.iter().filter(|&&elem| elem == edge).count()
     }
 
-    pub fn merge(&mut self, other: Self) {
+    pub fn merge(&mut self, other: Box<Self>) {
         let this_g_raw = if let Some(first) = self.edges.first() {
             // SAFETY: all nodes in a graph are reachable and not deallocated.
-            unsafe { (*first.0.as_ptr()).graph }
+            unsafe { (*first.0.as_ptr()).graph.get() }
         } else {
             panic!("attempted to merge into an empty graph");
         };
@@ -163,8 +169,8 @@ impl<T> Graph<T> {
             //
             // SAFETY: all nodes in a graph are reachable and not deallocated.
             unsafe {
-                (*left.as_mut_ptr()).graph = this_g_raw;
-                (*right.as_mut_ptr()).graph = this_g_raw;
+                (*left.as_mut_ptr()).graph.set(this_g_raw);
+                (*right.as_mut_ptr()).graph.set(this_g_raw);
             }
         }
 
@@ -212,7 +218,7 @@ impl<T> Graph<T> {
                 continue;
             }
             right_nodes.insert(elem);
-            let mut edges = graph
+            let edges = graph
                 .drain_filter(|edge| edge.0.as_mut_ptr() == elem || edge.1.as_mut_ptr() == elem);
             for edge in edges {
                 discover_right.push(edge.0.as_mut_ptr());
@@ -222,6 +228,8 @@ impl<T> Graph<T> {
         }
         let new_g = Box::new(Self { edges: Vec::new() });
         let new_g_raw = Box::into_raw(new_g);
+        // SAFETY: pointers obtained from `Box::into_raw` are always non-null.
+        let new_g_raw = unsafe { NonNull::new_unchecked(new_g_raw) };
         for edge in &right_graph {
             unsafe {
                 // SAFETY: all RcBox's in `right_graph` point to `self`'s raw
@@ -230,13 +238,13 @@ impl<T> Graph<T> {
                 //
                 // SAFETY: all nodes in a graph are reachable and not
                 // deallocated.
-                (*edge.0.as_mut_ptr()).graph = new_g_raw;
-                (*edge.1.as_mut_ptr()).graph = new_g_raw;
+                (*edge.0.as_mut_ptr()).graph.set(Some(new_g_raw));
+                (*edge.1.as_mut_ptr()).graph.set(Some(new_g_raw));
             }
         }
         // SAFETY: we previously obtained this pointer with `Box::into_raw` and
         // have not deallocated the `Box` or modified its contents.
-        unsafe { Some(Box::from_raw(new_g_raw)) }
+        unsafe { Some(Box::from_raw(new_g_raw.as_ptr())) }
     }
 
     pub fn count_directed_edges_toward(&self, destination: NonNull<RcBox<T>>) -> usize {
@@ -250,7 +258,7 @@ impl<T> Graph<T> {
     pub fn is_externally_reachable(&self) -> bool {
         let mut visited_nodes = HashSet::default();
         let mut stack = Vec::with_capacity(self.edges.len() * 2);
-        let mut iter = self.edges.iter();
+        let iter = self.edges.iter();
 
         for &(left, right) in iter {
             stack.push(left.inner);

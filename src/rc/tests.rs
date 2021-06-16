@@ -12,9 +12,9 @@ use super::{Rc, RcBox, Weak};
 #[test]
 fn size_of_rcbox() {
     #[cfg(target_pointer_width = "64")]
-    assert_eq!(size_of::<RcBox<i32>>(), 64);
-    #[cfg(target_pointer_width = "32")]
     assert_eq!(size_of::<RcBox<i32>>(), 32);
+    #[cfg(target_pointer_width = "32")]
+    assert_eq!(size_of::<RcBox<i32>>(), 16);
 }
 
 #[test]

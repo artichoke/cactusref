@@ -241,7 +241,7 @@
 //! [fully qualified syntax]: https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#fully-qualified-syntax-for-disambiguation-calling-methods-with-the-same-name
 
 use core::borrow;
-use core::cell::{Cell, RefCell};
+use core::cell::Cell;
 use core::cmp::Ordering;
 use core::convert::From;
 use core::fmt;
@@ -269,7 +269,7 @@ mod tests;
 pub(crate) struct RcBox<T> {
     strong: Cell<usize>,
     weak: Cell<usize>,
-    pub graph: Option<NonNull<Graph<T>>>,
+    pub graph: Cell<Option<NonNull<Graph<T>>>>,
     pub value: MaybeUninit<T>,
 }
 
@@ -347,7 +347,7 @@ impl<T> Rc<T> {
             Box::leak(Box::new(RcBox {
                 strong: Cell::new(1),
                 weak: Cell::new(1),
-                links: MaybeUninit::new(RefCell::new(Links::new())),
+                graph: Cell::new(None),
                 value: MaybeUninit::new(value),
             }))
             .into(),
@@ -959,7 +959,7 @@ impl<T> Rc<T> {
 
         ptr::write(&mut (*inner).strong, Cell::new(1));
         ptr::write(&mut (*inner).weak, Cell::new(1));
-        ptr::write(&mut (*inner).graph, None);
+        ptr::write(&mut (*inner).graph, Cell::new(None));
 
         Ok(inner)
     }
