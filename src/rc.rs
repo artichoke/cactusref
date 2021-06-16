@@ -1691,7 +1691,10 @@ unsafe impl<#[may_dangle] T> Drop for Weak<T> {
         // the strong pointers have disappeared.
         if inner.weak() == 0 {
             unsafe {
-                Global.deallocate(self.ptr.cast(), Layout::for_value(self.ptr.as_ref()));
+                // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw`
+                // is always safe to call.
+                let layout = Layout::for_value_raw(self.ptr.as_ptr());
+                Global.deallocate(self.ptr.cast(), layout);
             }
         }
     }
@@ -1902,10 +1905,10 @@ unsafe fn data_offset<T>(ptr: *const T) -> isize {
 //
 // Callers must ensure that `T` is not dropped.
 #[inline]
-unsafe fn box_free<T: ?Sized, A: Allocator>(ptr: NonNull<T>, alloc: A) {
-    // SAFETY: this function requires the allocated `T` behind `ptr` to not be
-    // dropped, so it is safe to convert the `NonNull<T>` to a `&T`.
-    let layout = Layout::for_value(ptr.as_ref());
+unsafe fn box_free<T, A: Allocator>(ptr: NonNull<T>, alloc: A) {
+    // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always
+    // safe to call.
+    let layout = Layout::for_value_raw(ptr.as_ptr());
 
     alloc.deallocate(ptr.cast(), layout);
 }

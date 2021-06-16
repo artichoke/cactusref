@@ -2,6 +2,7 @@
     allocator_api,
     core_intrinsics,
     dropck_eyepatch,
+    layout_for_ptr,
     set_ptr_value,
     slice_ptr_get
 )]
