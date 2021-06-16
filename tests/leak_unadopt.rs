@@ -32,8 +32,11 @@ fn leak_unadopt() {
         Rc::unadopt(&first, &inner);
     }
 
+    std::dbg!();
     drop(inner);
+    std::dbg!();
     drop(first);
+    std::dbg!();
 }
 
 #[test]

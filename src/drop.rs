@@ -3,12 +3,13 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::mem::{self, ManuallyDrop, MaybeUninit};
-use core::ptr::{self, NonNull};
+use core::ptr;
 
 #[cfg(doc)]
 use crate::adopt::Adopt;
 use crate::graph::Graph;
 use crate::hash::HashMap;
+use crate::hash::HashSet;
 use crate::link::{Kind, Link};
 use crate::rc::RcInnerPtr;
 use crate::Rc;
@@ -134,29 +135,23 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
         // If inner has a graph pointer, it is part of an adoption chain or
         // cycle.
         if let Some(graph) = self.inner().graph.take() {
-            if self.inner().is_dead() {
+            std::dbg!(self.inner().strong());
+            if std::dbg!(self.inner().is_dead()) {
                 unsafe {
                     let graph = Box::from_raw(graph.as_ptr());
                     let mut graph = ManuallyDrop::new(graph);
                     drop_unreachable_with_adoptions(self, &mut graph);
-                    if graph.is_empty() {
-                        ManuallyDrop::drop(&mut graph);
-                    }
                 }
                 return;
             }
-            if std::dbg!(unsafe { std::dbg!(graph.as_ref()).is_externally_reachable() }) {
-                let mut graph = unsafe { Box::from_raw(graph.as_ptr()) };
-                for _ in 0..std::dbg!(graph.num_links_between(self.ptr, self.ptr)) {
-                    graph.unlink(self.ptr, self.ptr);
-                    self.inner().dec_strong();
-                }
-                let graph = unsafe { NonNull::new_unchecked(Box::into_raw(graph)) };
+            if unsafe { std::dbg!(graph.as_ref().is_externally_reachable()) } {
                 self.inner().graph.set(Some(graph));
                 return;
             }
             unsafe {
+                self.inner().inc_strong();
                 let graph = Box::from_raw(graph.as_ptr());
+                std::dbg!();
                 drop_cycle(graph);
             }
             return;
@@ -265,27 +260,34 @@ unsafe fn drop_cycle<T>(graph: Box<Graph<T>>) {
     // Drop and deallocate all `T` and `HashMap` objects.
     drop(inners);
 
-    let unreachable_cycle_participants =
-        graph
-            .edges
-            .into_iter()
-            .map(|(ptr, _)| ptr.inner)
-            .filter(|ptr| {
-                // Filter the set of cycle participants so we only drop `Rc`s that are
-                // dead.
-                //
-                // If an `Rc` is not dead, it continues to be referenced outside of the
-                // cycle, for example:
-                //
-                //  | Rc | -> | Rc | -> | Rc | <-> | Rc |
-                //    ^                   |
-                //    |-------------------|
-                //
-                // This object continues to be referenced outside the cycle in another
-                // part of the graph.
-                let rcbox = ptr.as_ptr();
-                unsafe { (*rcbox).is_dead() }
-            });
+    let unreachable_cycle_participants = graph
+        .edges
+        .into_iter()
+        .filter_map(|(left, right)| {
+            if left.inner == right.inner {
+                None
+            } else {
+                Some(left.inner)
+            }
+        })
+        .filter(|ptr| {
+            // Filter the set of cycle participants so we only drop `Rc`s that are
+            // dead.
+            //
+            // If an `Rc` is not dead, it continues to be referenced outside of the
+            // cycle, for example:
+            //
+            //  | Rc | -> | Rc | -> | Rc | <-> | Rc |
+            //    ^                   |
+            //    |-------------------|
+            //
+            // This object continues to be referenced outside the cycle in another
+            // part of the graph.
+            let rcbox = ptr.as_ptr();
+            std::dbg!(rcbox);
+            unsafe { (*rcbox).is_dead() }
+        })
+        .collect::<HashSet<_>>();
 
     for ptr in unreachable_cycle_participants {
         trace!(
@@ -293,8 +295,10 @@ unsafe fn drop_cycle<T>(graph: Box<Graph<T>>) {
             ptr
         );
 
-        let rcbox = ptr.as_ptr();
-        std::dbg!((*rcbox).weak());
+        let rcbox = std::dbg!(ptr).as_ptr();
+        if (*rcbox).weak() == 0 {
+            continue;
+        }
         // remove the implicit "strong weak" pointer now that we've destroyed
         // the contents.
         (*rcbox).dec_weak();
@@ -335,6 +339,7 @@ unsafe fn drop_cycle<T>(graph: Box<Graph<T>>) {
 // |      |----------| <--------|
 // |--------------------|
 unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>, graph: &mut Box<Graph<T>>) {
+    std::dbg!();
     let mut to_unadopt = Vec::with_capacity(graph.len());
     // `this` is unreachable but may have been adopted and dropped.
     //
@@ -348,13 +353,17 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>, graph: &mut Box<G
             to_unadopt.push((src, dst));
         }
     }
+    std::dbg!();
     for (src, dst) in to_unadopt {
+        std::dbg!();
         graph.unlink(src.inner, dst.inner);
+        std::dbg!();
     }
 
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
+    std::dbg!();
     if !(*rcbox).is_uninit() {
         trace!(
             "cactusref deallocating RcBox after dropping adopted and unreachable item {:p} in the object graph",
@@ -363,12 +372,15 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>, graph: &mut Box<G
         // Mark the `RcBox` as uninitialized so we can make its `MaybeUninit`
         // fields uninhabited.
         (*rcbox).make_uninit();
+        std::dbg!();
 
         // Move `T` out of the `RcBox`. Dropping an uninitialized `MaybeUninit`
         // has no effect.
         let inner = mem::replace(&mut (*rcbox).value, MaybeUninit::uninit());
+        std::dbg!();
         // destroy the contained `T`.
         drop(inner.assume_init());
+        std::dbg!();
     }
 
     // remove the implicit "strong weak" pointer now that we've destroyed the
@@ -382,7 +394,10 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>, graph: &mut Box<G
         );
         // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always
         // safe to call.
+        std::dbg!();
         let layout = Layout::for_value_raw(this.ptr.as_ptr());
+        std::dbg!();
         Global.deallocate(this.ptr.cast(), layout);
+        std::dbg!();
     }
 }

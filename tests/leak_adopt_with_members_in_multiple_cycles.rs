@@ -77,6 +77,8 @@ fn leak_adopt_with_members_in_multiple_cycles() {
     }
     group2.bridge_to(Rc::clone(&group1));
     group1.bridge_to(Rc::clone(&group2));
+    dbg!(Rc::strong_count(&group2));
+    dbg!(Rc::strong_count(&group1));
 
     drop(group2);
     drop(group1);

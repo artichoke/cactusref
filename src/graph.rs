@@ -192,7 +192,7 @@ impl<T> Graph<T> {
         let edge_index = if let Some(pos) = edge_index {
             match self.num_links_between(source, destination) {
                 1 => {}
-                n => return None,
+                _ => return None,
             };
             pos
         } else {
@@ -210,7 +210,7 @@ impl<T> Graph<T> {
         let mut right_nodes = HashSet::default();
 
         let mut discover_right = Vec::with_capacity(2 * graph.len());
-        let mut right_graph = Vec::with_capacity(graph.len() - 1);
+        let mut right_graph = Vec::with_capacity(graph.len().checked_sub(1).unwrap_or_default());
         discover_right.push(right.as_mut_ptr());
 
         while let Some(elem) = discover_right.pop() {

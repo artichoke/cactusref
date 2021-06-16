@@ -218,8 +218,20 @@ unsafe impl<T> Adopt for Rc<T> {
     /// ```
     fn unadopt(this: &Self, other: &Self) {
         if let Some(mut graph) = this.inner().graph.get() {
-            unsafe {
-                (*graph.as_mut()).unlink(this.ptr, other.ptr);
+            if let Some(split) = unsafe { (*graph.as_mut()).try_split_off(this.ptr, other.ptr) } {
+                if split.is_empty() {
+                    other.inner().graph.set(None);
+                } else {
+                    let split = Box::into_raw(split);
+                    // SAFETY: pointers obtained from `Box::into_raw` are always
+                    // non-null.
+                    let split = unsafe { NonNull::new_unchecked(split) };
+                    other.inner().graph.set(Some(split));
+                }
+            } else {
+                unsafe {
+                    (*graph.as_mut()).unlink(this.ptr, other.ptr);
+                }
             }
         }
     }
