@@ -1911,6 +1911,9 @@
 <span id="1909">1909</span>
 <span id="1910">1910</span>
 <span id="1911">1911</span>
+<span id="1912">1912</span>
+<span id="1913">1913</span>
+<span id="1914">1914</span>
 </pre><pre class="rust">
 <span class="doccomment">//! Single-threaded reference-counting pointers. &#39;Rc&#39; stands for &#39;Reference</span>
 <span class="doccomment">//! Counted&#39;.</span>
@@ -3605,7 +3608,10 @@
         <span class="comment">// the strong pointers have disappeared.</span>
         <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">weak</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
             <span class="kw">unsafe</span> {
-                <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">Layout::for_value</span>(<span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">as_ref</span>()));
+                <span class="comment">// SAFETY: `T` is `Sized`, which means `Layout::for_value_raw`</span>
+                <span class="comment">// is always safe to call.</span>
+                <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value_raw</span>(<span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>());
+                <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="self">self</span>.<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">layout</span>);
             }
         }
     }
@@ -3816,10 +3822,10 @@
 <span class="comment">//</span>
 <span class="comment">// Callers must ensure that `T` is not dropped.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">box_free</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span>, <span class="ident">A</span>: <span class="ident">Allocator</span><span class="op">&gt;</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">alloc</span>: <span class="ident">A</span>) {
-    <span class="comment">// SAFETY: this function requires the allocated `T` behind `ptr` to not be</span>
-    <span class="comment">// dropped, so it is safe to convert the `NonNull&lt;T&gt;` to a `&amp;T`.</span>
-    <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value</span>(<span class="ident">ptr</span>.<span class="ident">as_ref</span>());
+<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">box_free</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">A</span>: <span class="ident">Allocator</span><span class="op">&gt;</span>(<span class="ident">ptr</span>: <span class="ident">NonNull</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">alloc</span>: <span class="ident">A</span>) {
+    <span class="comment">// SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always</span>
+    <span class="comment">// safe to call.</span>
+    <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value_raw</span>(<span class="ident">ptr</span>.<span class="ident">as_ptr</span>());
 
     <span class="ident">alloc</span>.<span class="ident">deallocate</span>(<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">layout</span>);
 }

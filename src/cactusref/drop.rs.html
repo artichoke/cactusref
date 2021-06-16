@@ -427,6 +427,13 @@
 <span id="425">425</span>
 <span id="426">426</span>
 <span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">alloc::alloc</span>::{<span class="ident">Allocator</span>, <span class="ident">Global</span>, <span class="ident">Layout</span>};
 <span class="kw">use</span> <span class="ident">alloc::vec</span>;
@@ -608,7 +615,6 @@
         }
     }
 
-    <span class="kw">let</span> <span class="ident">nonnull</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">ptr</span>;
     <span class="kw">let</span> <span class="ident">rcbox</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>();
     <span class="comment">// Mark `this` as pending deallocation. This is not strictly necessary since</span>
     <span class="comment">// `this` is unreachable, but `kill`ing `this ensures we don&#39;t double-free.</span>
@@ -635,7 +641,10 @@
     (<span class="kw-2">*</span><span class="ident">rcbox</span>).<span class="ident">dec_weak</span>();
 
     <span class="kw">if</span> (<span class="kw-2">*</span><span class="ident">rcbox</span>).<span class="ident">weak</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
-        <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="ident">nonnull</span>.<span class="ident">cast</span>(), <span class="ident">Layout::for_value</span>(<span class="ident">nonnull</span>.<span class="ident">as_ref</span>()));
+        <span class="comment">// SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always</span>
+        <span class="comment">// safe to call.</span>
+        <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value_raw</span>(<span class="ident">this</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>());
+        <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="ident">this</span>.<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">layout</span>);
     }
 }
 
@@ -756,7 +765,10 @@
                 <span class="string">&quot;no more weak references, deallocating layout for item {:?} in orphaned cycle&quot;</span>,
                 <span class="ident">ptr</span>
             );
-            <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">Layout::for_value</span>(<span class="ident">ptr</span>.<span class="ident">as_ref</span>()));
+            <span class="comment">// SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is</span>
+            <span class="comment">// always safe to call.</span>
+            <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value_raw</span>(<span class="ident">ptr</span>.<span class="ident">as_ptr</span>());
+            <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">layout</span>);
         }
     }
 }
@@ -818,7 +830,6 @@
     <span class="comment">// deallocated.</span>
     <span class="ident">links</span>.<span class="ident">borrow_mut</span>().<span class="ident">clear</span>();
 
-    <span class="kw">let</span> <span class="ident">nonnull</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">ptr</span>;
     <span class="kw">let</span> <span class="ident">rcbox</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>();
     <span class="comment">// Mark `this` as pending deallocation. This is not strictly necessary since</span>
     <span class="comment">// `this` is unreachable, but `kill`ing `this ensures we don&#39;t double-free.</span>
@@ -852,7 +863,10 @@
             <span class="string">&quot;no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph&quot;</span>,
             <span class="ident">this</span>.<span class="ident">ptr</span>
         );
-        <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="ident">nonnull</span>.<span class="ident">cast</span>(), <span class="ident">Layout::for_value</span>(<span class="ident">nonnull</span>.<span class="ident">as_ref</span>()));
+        <span class="comment">// SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always</span>
+        <span class="comment">// safe to call.</span>
+        <span class="kw">let</span> <span class="ident">layout</span> <span class="op">=</span> <span class="ident">Layout::for_value_raw</span>(<span class="ident">this</span>.<span class="ident">ptr</span>.<span class="ident">as_ptr</span>());
+        <span class="ident">Global</span>.<span class="ident">deallocate</span>(<span class="ident">this</span>.<span class="ident">ptr</span>.<span class="ident">cast</span>(), <span class="ident">layout</span>);
     }
 }
 </pre></div>
