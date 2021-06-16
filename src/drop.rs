@@ -128,57 +128,38 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
         // correctly for deallocated cycles and does not cause a use-after-free.
         self.inner().dec_strong();
 
-        unsafe {
-            // If links is empty, the object is either not in a cycle or
-            // part of a cycle that has been link busted for deallocation.
-            if self.inner().links().borrow().is_empty() {
-                // If the object was never in a cycle, `dec_strong` above will
-                // kill the `Rc`.
-                //
-                // If the object was in a cycle, the `Rc` will only be dead if
-                // all strong references to it have been dropped.
-                if self.inner().is_dead() {
-                    drop_unreachable(self);
-                }
-                // otherwise, ignore the pointed to object; it will be dropped
-                // when there are no more remaining strong references to it.
-                return;
-            }
+        // If inner has a graph pointer, it is part of an adoption chain or
+        // cycle.
+        if let Some(graph) = self.inner().graph.take() {
             if self.inner().is_dead() {
-                drop_unreachable_with_adoptions(self);
+                unsafe {
+                    drop_unreachable_with_adoptions(self);
+                }
                 return;
             }
-            if let Some(cycle) = Self::orphaned_cycle(self) {
-                drop_cycle(cycle);
+            if unsafe { graph.as_ref().is_externally_reachable() } {
+                self.inner().graph = Some(graph);
                 return;
             }
-            debug!("cactusref drop skipped, Rc is reachable");
+            unsafe {
+                drop_cycle(graph);
+            }
+            return;
         }
+        // If inner *does not* have a graph pointer, the object is just a normal
+        // `Rc` and we can drop and deallocate if it is dead.
+        if self.inner().is_dead() {
+            unsafe {
+                drop_unreachable(self);
+            }
+            return;
+        }
+        debug!("cactusref drop skipped, Rc is reachable");
     }
 }
 
 unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     debug!("cactusref detected unreachable Rc");
-    let forward = Link::forward(this.ptr);
-    let backward = Link::backward(this.ptr);
-    // Remove reverse links so `this` is not included in cycle detection for
-    // objects that had adopted `this`. This prevents a use-after-free in
-    // `Rc::orphaned_cycle`.
-    let links = this.inner().links();
-    for (item, &strong) in links.borrow().iter() {
-        match item.kind() {
-            Kind::Forward => {
-                let mut links = links.borrow_mut();
-                links.remove(forward, strong);
-                links.remove(backward, strong);
-            }
-            Kind::Loopback => {
-                let mut links = links.borrow_mut();
-                links.remove(*item, strong);
-            }
-            Kind::Backward => {}
-        }
-    }
 
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since

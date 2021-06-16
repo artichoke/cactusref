@@ -257,7 +257,7 @@ use alloc::alloc::handle_alloc_error;
 use alloc::alloc::{AllocError, Allocator, Global, Layout};
 use alloc::boxed::Box;
 
-use crate::link::Links;
+use crate::graph::Graph;
 
 #[cfg(test)]
 mod tests;
@@ -269,22 +269,8 @@ mod tests;
 pub(crate) struct RcBox<T> {
     strong: Cell<usize>,
     weak: Cell<usize>,
-    pub links: MaybeUninit<RefCell<Links<T>>>,
+    pub graph: Option<NonNull<Graph<T>>>,
     pub value: MaybeUninit<T>,
-}
-
-impl<T> RcBox<T> {
-    /// # Safety
-    ///
-    /// Callers must ensure this `RcBox` is not dead.
-    #[inline]
-    pub(crate) unsafe fn links(&self) -> &RefCell<Links<T>> {
-        let links = &self.links;
-        // SAFETY: because callers have ensured the `RcBox` is not dead, `links`
-        // has not yet been deallocated and the `MaybeUninit` is inhabited.
-        let pointer_to_links = links as *const MaybeUninit<RefCell<Links<T>>>;
-        &*(pointer_to_links.cast::<RefCell<Links<T>>>())
-    }
 }
 
 /// A single-threaded reference-counting pointer. 'Rc' stands for 'Reference
@@ -973,10 +959,7 @@ impl<T> Rc<T> {
 
         ptr::write(&mut (*inner).strong, Cell::new(1));
         ptr::write(&mut (*inner).weak, Cell::new(1));
-        ptr::write(
-            &mut (*inner).links,
-            MaybeUninit::new(RefCell::new(Links::new())),
-        );
+        ptr::write(&mut (*inner).graph, None);
 
         Ok(inner)
     }

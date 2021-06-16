@@ -1,6 +1,7 @@
 #![feature(
     allocator_api,
     core_intrinsics,
+    drain_filter,
     dropck_eyepatch,
     layout_for_ptr,
     set_ptr_value,
@@ -140,6 +141,7 @@ extern crate log;
 mod adopt;
 mod cycle;
 mod drop;
+mod graph;
 mod hash;
 mod link;
 mod rc;
