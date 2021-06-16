@@ -178,7 +178,6 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
         }
     }
 
-    let nonnull = this.ptr;
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
@@ -205,7 +204,10 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     (*rcbox).dec_weak();
 
     if (*rcbox).weak() == 0 {
-        Global.deallocate(nonnull.cast(), Layout::for_value(nonnull.as_ref()));
+        // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always
+        // safe to call.
+        let layout = Layout::for_value_raw(this.ptr.as_ptr());
+        Global.deallocate(this.ptr.cast(), layout);
     }
 }
 
@@ -326,7 +328,10 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
                 "no more weak references, deallocating layout for item {:?} in orphaned cycle",
                 ptr
             );
-            Global.deallocate(ptr.cast(), Layout::for_value(ptr.as_ref()));
+            // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is
+            // always safe to call.
+            let layout = Layout::for_value_raw(ptr.as_ptr());
+            Global.deallocate(ptr.cast(), layout);
         }
     }
 }
@@ -388,7 +393,6 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
     // deallocated.
     links.borrow_mut().clear();
 
-    let nonnull = this.ptr;
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
@@ -422,6 +426,9 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
             "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
             this.ptr
         );
-        Global.deallocate(nonnull.cast(), Layout::for_value(nonnull.as_ref()));
+        // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always
+        // safe to call.
+        let layout = Layout::for_value_raw(this.ptr.as_ptr());
+        Global.deallocate(this.ptr.cast(), layout);
     }
 }
