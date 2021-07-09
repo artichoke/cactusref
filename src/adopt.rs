@@ -29,7 +29,7 @@ mod sealed {
 ///
 /// - Memory leaks.
 /// - Double-frees.
-/// - Dangling `Rc`s which will cause a use after free.`
+/// - Dangling `Rc`s which will cause a use after free.
 ///
 /// [`adopt_unchecked`]: Adopt::adopt_unchecked
 /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
