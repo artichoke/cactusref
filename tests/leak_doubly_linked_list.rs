@@ -92,7 +92,7 @@ fn leak_doubly_linked_list() {
 
     let list = iter::repeat(())
         .map(|_| "a".repeat(1024 * 1024))
-        .take(10)
+        .take(3)
         .collect::<Vec<_>>();
     let mut list = List::from(list);
     let head = list.pop().unwrap();

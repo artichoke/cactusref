@@ -17,6 +17,7 @@ fn main() {
 fn leak_unadopt() {
     log::info!("unadopt");
 
+    dbg!(std::mem::size_of::<S>());
     let mut first = S { inner: None };
     let second = S { inner: None };
     let second = Rc::new(RefCell::new(second));
@@ -55,6 +56,9 @@ fn leak_with_elided_unadopt() {
 
     let inner = first.borrow_mut().inner.take().unwrap();
 
+    std::dbg!();
     drop(inner);
+    std::dbg!();
     drop(first);
+    std::dbg!();
 }

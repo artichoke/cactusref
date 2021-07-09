@@ -217,6 +217,12 @@ impl<T> Graph<T> {
             if right_nodes.contains(&elem) {
                 continue;
             }
+            if graph
+                .iter()
+                .any(|&(src, dst)| src.as_mut_ptr() == elem || dst.as_mut_ptr() == elem)
+            {
+                continue;
+            }
             right_nodes.insert(elem);
             let edges = graph
                 .drain_filter(|edge| edge.0.as_mut_ptr() == elem || edge.1.as_mut_ptr() == elem);
@@ -225,6 +231,10 @@ impl<T> Graph<T> {
                 discover_right.push(edge.1.as_mut_ptr());
                 right_graph.push(edge);
             }
+        }
+        self.edges = graph;
+        if right_graph.is_empty() {
+            return None;
         }
         let new_g = Box::new(Self { edges: Vec::new() });
         let new_g_raw = Box::into_raw(new_g);
@@ -244,7 +254,9 @@ impl<T> Graph<T> {
         }
         // SAFETY: we previously obtained this pointer with `Box::into_raw` and
         // have not deallocated the `Box` or modified its contents.
-        unsafe { Some(Box::from_raw(new_g_raw.as_ptr())) }
+        let mut new_g = unsafe { Box::from_raw(new_g_raw.as_ptr()) };
+        new_g.edges = right_graph;
+        Some(std::dbg!(new_g))
     }
 
     pub fn count_directed_edges_toward(&self, destination: NonNull<RcBox<T>>) -> usize {
@@ -270,7 +282,13 @@ impl<T> Graph<T> {
                 visited_nodes.insert(node);
                 // SAFETY: RcBox's in a graph are live allocations.
                 let strong = unsafe { (*node.as_ptr()).strong() };
-                let graph_internal_strong = self.count_directed_edges_toward(node);
+                let graph_internal_strong = self
+                    .edges
+                    .iter()
+                    .filter(|&(src, dst)| {
+                        src.as_ptr() == node.as_ptr() || dst.as_ptr() == node.as_ptr()
+                    })
+                    .count();
                 if strong > graph_internal_strong {
                     return true;
                 }

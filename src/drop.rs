@@ -138,13 +138,16 @@ unsafe impl<#[may_dangle] T> Drop for Rc<T> {
             std::dbg!(self.inner().strong());
             if std::dbg!(self.inner().is_dead()) {
                 unsafe {
-                    let graph = Box::from_raw(graph.as_ptr());
+                    let graph = std::dbg!(Box::from_raw(graph.as_ptr()));
                     let mut graph = ManuallyDrop::new(graph);
                     drop_unreachable_with_adoptions(self, &mut graph);
+                    if graph.is_empty() {
+                        ManuallyDrop::drop(&mut graph);
+                    }
                 }
                 return;
             }
-            if unsafe { std::dbg!(graph.as_ref().is_externally_reachable()) } {
+            if unsafe { std::dbg!(std::dbg!(graph.as_ref()).is_externally_reachable()) } {
                 self.inner().graph.set(Some(graph));
                 return;
             }
@@ -248,6 +251,7 @@ unsafe fn drop_cycle<T>(graph: Box<Graph<T>>) {
             // Mark the `RcBox` as uninitialized so we can make its
             // `MaybeUninit` fields uninhabited.
             (*rcbox).make_uninit();
+            (*rcbox).graph = core::cell::Cell::new(None);
 
             // Move `T` out of the `RcBox`. Dropping an uninitialized
             // `MaybeUninit` has no effect.
@@ -339,7 +343,7 @@ unsafe fn drop_cycle<T>(graph: Box<Graph<T>>) {
 // |      |----------| <--------|
 // |--------------------|
 unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>, graph: &mut Box<Graph<T>>) {
-    std::dbg!();
+    std::dbg!(this.ptr);
     let mut to_unadopt = Vec::with_capacity(graph.len());
     // `this` is unreachable but may have been adopted and dropped.
     //
@@ -359,6 +363,11 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>, graph: &mut Box<G
         graph.unlink(src.inner, dst.inner);
         std::dbg!();
     }
+    // we're about to dealloc `this`, purge it from the graph.
+    graph
+        .edges
+        .drain_filter(|&mut (_, dst)| dst.inner == this.ptr)
+        .count();
 
     let rcbox = this.ptr.as_ptr();
     // Mark `this` as pending deallocation. This is not strictly necessary since

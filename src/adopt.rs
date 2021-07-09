@@ -138,6 +138,7 @@ unsafe impl<T> Adopt for Rc<T> {
         if ptr::eq(this, other) {
             return;
         }
+        std::dbg!();
         match (this.inner().graph.get(), other.inner().graph.get()) {
             (Some(mut left), Some(right)) if left == right => {
                 (*left.as_mut()).link(this.ptr, other.ptr);
@@ -217,8 +218,11 @@ unsafe impl<T> Adopt for Rc<T> {
     /// assert_eq!(weak.weak_count(), 0);
     /// ```
     fn unadopt(this: &Self, other: &Self) {
+        std::dbg!();
         if let Some(mut graph) = this.inner().graph.get() {
+            std::dbg!(unsafe { &(*graph.as_mut()) });
             if let Some(split) = unsafe { (*graph.as_mut()).try_split_off(this.ptr, other.ptr) } {
+                let split = std::dbg!(split);
                 if split.is_empty() {
                     other.inner().graph.set(None);
                 } else {
@@ -229,9 +233,17 @@ unsafe impl<T> Adopt for Rc<T> {
                     other.inner().graph.set(Some(split));
                 }
             } else {
+                std::dbg!((this.ptr, other.ptr));
                 unsafe {
                     (*graph.as_mut()).unlink(this.ptr, other.ptr);
                 }
+            }
+            std::dbg!(unsafe { &(*graph.as_mut()) });
+            if unsafe { (*graph.as_ptr()).is_empty() } {
+                std::dbg!();
+                let _graph = unsafe { Box::from_raw(graph.as_ptr()) };
+                this.inner().graph.set(None);
+                other.inner().graph.set(None);
             }
         }
     }
