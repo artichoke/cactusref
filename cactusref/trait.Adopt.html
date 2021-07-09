@@ -14,7 +14,7 @@ the object graph will result in <em><a href="https://doc.rust-lang.org/reference
 <ul>
 <li>Memory leaks.</li>
 <li>Double-frees.</li>
-<li>Dangling <code>Rc</code>s which will cause a use after free.`</li>
+<li>Dangling <code>Rc</code>s which will cause a use after free.</li>
 </ul>
 </div></details><h2 id="required-methods" class="small-section-header">Required methods<a href="#required-methods" class="anchor"></a></h2><div class="methods"><details class="rustdoc-toggle" open><summary><div id="tymethod.adopt_unchecked" class="method has-srclink"><div class="rightside"><a class="srclink" href="../src/cactusref/adopt.rs.html#59" title="goto source code">[src]</a></div><code>unsafe fn <a href="#tymethod.adopt_unchecked" class="fnname">adopt_unchecked</a>(this: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></div></summary><div class="docblock"><p>Perform bookkeeping to record that <code>this</code> has an owned reference to
 <code>other</code>.</p>
