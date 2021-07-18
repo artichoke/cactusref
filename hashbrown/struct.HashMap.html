@@ -10,8 +10,7 @@ alternative algorithms are available on crates.io, such as the <a href="https://
 this can frequently be achieved by using <code>#[derive(PartialEq, Eq, Hash)]</code>.
 If you implement these yourself, it is important that the following
 property holds:</p>
-<pre><code class="language-text">k1 == k2 -&gt; hash(k1) == hash(k2)
-</code></pre>
+<div class="example-wrap"><pre class="language-text">k1 == k2 -&gt; hash(k1) == hash(k2)</pre></div>
 <p>In other words, if two keys are equal, their hashes must be equal.</p>
 <p>It is a logic error for a key to be modified in such a way that the key’s
 hash, as determined by the <a href="https://doc.rust-lang.org/std/hash/trait.Hash.html"><code>Hash</code></a> trait, or its equality, as determined by

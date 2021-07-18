@@ -159,10 +159,8 @@ this value before logging a message. By default, no levels are disabled.</p>
 once they’re set.</p>
 <p>For example, a crate can disable trace level logs in debug builds and trace, debug, and info
 level logs in release builds with the following configuration:</p>
-<pre><code class="language-toml">[dependencies]
-log = { version = &quot;0.4&quot;, features = [&quot;max_level_debug&quot;, &quot;release_max_level_warn&quot;] }
-</code></pre>
-<h1 id="crate-feature-flags" class="section-header"><a href="#crate-feature-flags">Crate Feature Flags</a></h1>
+<div class="example-wrap"><pre class="language-toml">[dependencies]
+log = { version = &quot;0.4&quot;, features = [&quot;max_level_debug&quot;, &quot;release_max_level_warn&quot;] }</pre></div><h1 id="crate-feature-flags" class="section-header"><a href="#crate-feature-flags">Crate Feature Flags</a></h1>
 <p>The following crate feature flags are available in addition to the filters. They are
 configured in your <code>Cargo.toml</code>.</p>
 <ul>
@@ -170,10 +168,8 @@ configured in your <code>Cargo.toml</code>.</p>
 <code>set_boxed_logger</code> functionality.</li>
 <li><code>serde</code> enables support for serialization and deserialization of <code>Level</code> and <code>LevelFilter</code>.</li>
 </ul>
-<pre><code class="language-toml">[dependencies]
-log = { version = &quot;0.4&quot;, features = [&quot;std&quot;, &quot;serde&quot;] }
-</code></pre>
-<h1 id="version-compatibility" class="section-header"><a href="#version-compatibility">Version compatibility</a></h1>
+<div class="example-wrap"><pre class="language-toml">[dependencies]
+log = { version = &quot;0.4&quot;, features = [&quot;std&quot;, &quot;serde&quot;] }</pre></div><h1 id="version-compatibility" class="section-header"><a href="#version-compatibility">Version compatibility</a></h1>
 <p>The 0.3 and 0.4 versions of the <code>log</code> crate are almost entirely compatible. Log messages
 made using <code>log</code> 0.3 will forward transparently to a logger implementation using <code>log</code> 0.4. Log
 messages made using <code>log</code> 0.4 will forward to a logger implementation using <code>log</code> 0.3, but the
