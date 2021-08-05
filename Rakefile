@@ -14,9 +14,6 @@ namespace :lint do
 
   desc 'Lint Rust sources with Clippy'
   task :clippy do
-    FileList['**/{build,lib,main}.rs'].each do |root|
-      FileUtils.touch(root)
-    end
     sh 'cargo clippy --workspace --all-features --all-targets'
   end
 
