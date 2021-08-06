@@ -46,7 +46,9 @@
   description: "Area: Security vulnerabilities and unsoundness issues."
 - name: "A-std-compat"
   color: "f7e101"
-  description: "Area: Compatibility with the latest from `Rc` in upstream `alloc` and `std`."
+  description:
+    "Area: Compatibility with the latest from `Rc` in upstream `alloc` and
+    `std`."
 - name: "A-unsafe-code"
   color: "f7e101"
   description: "Area: Unsafe code, be careful when reviewing."
@@ -67,10 +69,12 @@
   description: "Category: Further information is requested."
 - name: "E-easy"
   color: "02e10c"
-  description: "Call for participation: Experience needed to fix: Easy / not much."
+  description:
+    "Call for participation: Experience needed to fix: Easy / not much."
 - name: "E-medium"
   color: "02e10c"
-  description: "Call for participation: Experience needed to fix: Medium / intermediate."
+  description:
+    "Call for participation: Experience needed to fix: Medium / intermediate."
 - name: "E-hard"
   color: "02e10c"
   description: "Call for participation: Experience needed to fix: Hard / a lot."
@@ -88,13 +92,16 @@
   description: "Target: Support for building on macOS / Darwin targets."
 - name: "O-wasm-emscripten"
   color: "6e6ec0"
-  description: "Target: Support for building the `wasm32-unknown-emscripten` target."
+  description:
+    "Target: Support for building the `wasm32-unknown-emscripten` target."
 - name: "O-wasm-unknown"
   color: "6e6ec0"
-  description: "Target: Support for building the `wasm32-unknown-unknown` target."
+  description:
+    "Target: Support for building the `wasm32-unknown-unknown` target."
 - name: "O-windows"
   color: "6e6ec0"
-  description: "Target: Support for building on Windows targets like
+  description:
+    "Target: Support for building on Windows targets like
     `x86_64-pc-windows-msvc`."
 - name: "S-archive"
   color: "d3dddd"
@@ -115,7 +122,8 @@
   description: "Status: This issue or pull request is not well-formed."
 - name: "S-postponed"
   color: "d3dddd"
-  description: "Status: This issue or pull request is being postponed until later."
+  description:
+    "Status: This issue or pull request is being postponed until later."
 - name: "S-speculative"
   color: "d3dddd"
   description: "Status: This is just an idea."
