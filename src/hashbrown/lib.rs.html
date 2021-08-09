@@ -228,7 +228,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// [rayon]: https://docs.rs/rayon/1.0/rayon</span>
     <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">rayon</span> {
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::external_trait_impls::rayon::raw</span>::<span class="kw-2">*</span>;
+        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::external_trait_impls::rayon::raw</span>::<span class="kw-2">*</span>;
     }
 }
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;raw&quot;</span>))]</span>
@@ -243,10 +243,10 @@
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">hash_map</span> {
     <span class="doccomment">//! A hash map implemented with quadratic probing and SIMD lookup.</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::map</span>::<span class="kw-2">*</span>;
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::map</span>::<span class="kw-2">*</span>;
 
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;rustc-internal-api&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::rustc_entry</span>::<span class="kw-2">*</span>;
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rustc_entry</span>::<span class="kw-2">*</span>;
 
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;rayon&quot;</span>)]</span>
     <span class="doccomment">/// [rayon]-based parallel iterator types for hash maps.</span>
@@ -255,12 +255,12 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// [rayon]: https://docs.rs/rayon/1.0/rayon</span>
     <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">rayon</span> {
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::external_trait_impls::rayon::map</span>::<span class="kw-2">*</span>;
+        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::external_trait_impls::rayon::map</span>::<span class="kw-2">*</span>;
     }
 }
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">hash_set</span> {
     <span class="doccomment">//! A hash set implemented as a `HashMap` where the value is `()`.</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::set</span>::<span class="kw-2">*</span>;
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::set</span>::<span class="kw-2">*</span>;
 
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;rayon&quot;</span>)]</span>
     <span class="doccomment">/// [rayon]-based parallel iterator types for hash sets.</span>
@@ -269,12 +269,12 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// [rayon]: https://docs.rs/rayon/1.0/rayon</span>
     <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">rayon</span> {
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::external_trait_impls::rayon::set</span>::<span class="kw-2">*</span>;
+        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::external_trait_impls::rayon::set</span>::<span class="kw-2">*</span>;
     }
 }
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::map::HashMap</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::set::HashSet</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::map::HashMap</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::set::HashSet</span>;
 
 <span class="doccomment">/// The error type for `try_reserve` methods.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Debug</span>)]</span>

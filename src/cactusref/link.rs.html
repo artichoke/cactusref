@@ -207,9 +207,9 @@
 <span class="kw">use</span> <span class="ident">core::num::NonZeroUsize</span>;
 <span class="kw">use</span> <span class="ident">core::ptr</span>::{<span class="self">self</span>, <span class="ident">NonNull</span>};
 
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::hash::hash_map</span>::{<span class="ident">DrainFilter</span>, <span class="ident">Iter</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::hash::HashMap</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::rc</span>::{<span class="ident">RcBox</span>, <span class="ident">RcInnerPtr</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::hash::hash_map</span>::{<span class="ident">DrainFilter</span>, <span class="ident">Iter</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::hash::HashMap</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rc</span>::{<span class="ident">RcBox</span>, <span class="ident">RcInnerPtr</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum</span> <span class="ident">Kind</span> {
@@ -340,7 +340,7 @@
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">as_forward</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span><span class="ident">::forward</span>(<span class="self">self</span>.<span class="ident">ptr</span>)
+        <span class="ident"><span class="self">Self</span>::forward</span>(<span class="self">self</span>.<span class="ident">ptr</span>)
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>

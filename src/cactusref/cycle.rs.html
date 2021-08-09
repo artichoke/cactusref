@@ -103,10 +103,10 @@
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">alloc::vec</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::hash</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::link</span>::{<span class="ident">Kind</span>, <span class="ident">Link</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::rc::RcInnerPtr</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::Rc</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::hash</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::link</span>::{<span class="ident">Kind</span>, <span class="ident">Link</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rc::RcInnerPtr</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Rc</span>;
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Traverse the linked object graph from the given `Rc` to determine if the</span>

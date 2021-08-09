@@ -2261,11 +2261,11 @@
 <span id="2261">2261</span>
 <span id="2262">2262</span>
 </pre><pre class="rust">
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::alloc::alloc</span>::{<span class="ident">handle_alloc_error</span>, <span class="ident">Layout</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::scopeguard::guard</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::TryReserveError</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::alloc::alloc</span>::{<span class="ident">handle_alloc_error</span>, <span class="ident">Layout</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::scopeguard::guard</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::TryReserveError</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>)]</span>
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::UnavailableMutError</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::UnavailableMutError</span>;
 <span class="kw">use</span> <span class="ident">core::hint</span>;
 <span class="kw">use</span> <span class="ident">core::iter::FusedIterator</span>;
 <span class="kw">use</span> <span class="ident">core::marker::PhantomData</span>;
@@ -2299,12 +2299,12 @@
 }
 
 <span class="kw">mod</span> <span class="ident">alloc</span>;
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="self">self</span><span class="ident">::alloc</span>::{<span class="ident">do_alloc</span>, <span class="ident">Allocator</span>, <span class="ident">Global</span>};
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::alloc</span>::{<span class="ident">do_alloc</span>, <span class="ident">Allocator</span>, <span class="ident">Global</span>};
 
 <span class="kw">mod</span> <span class="ident">bitmask</span>;
 
-<span class="kw">use</span> <span class="self">self</span><span class="ident">::bitmask</span>::{<span class="ident">BitMask</span>, <span class="ident">BitMaskIter</span>};
-<span class="kw">use</span> <span class="self">self</span><span class="ident">::imp::Group</span>;
+<span class="kw">use</span> <span class="ident"><span class="self">self</span>::bitmask</span>::{<span class="ident">BitMask</span>, <span class="ident">BitMaskIter</span>};
+<span class="kw">use</span> <span class="ident"><span class="self">self</span>::imp::Group</span>;
 
 <span class="comment">// Branch prediction hint. This is currently only available on nightly but it</span>
 <span class="comment">// consistently improves performance by 10-15%.</span>
@@ -2673,13 +2673,13 @@
     <span class="doccomment">/// for inserting the given number of elements without reallocating.</span>
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;raw&quot;</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_with_capacity</span>(<span class="ident">capacity</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">TryReserveError</span><span class="op">&gt;</span> {
-        <span class="self">Self</span><span class="ident">::try_with_capacity_in</span>(<span class="ident">capacity</span>, <span class="ident">Global</span>)
+        <span class="ident"><span class="self">Self</span>::try_with_capacity_in</span>(<span class="ident">capacity</span>, <span class="ident">Global</span>)
     }
 
     <span class="doccomment">/// Allocates a new hash table with at least enough capacity for inserting</span>
     <span class="doccomment">/// the given number of elements without reallocating.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_capacity</span>(<span class="ident">capacity</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span><span class="ident">::with_capacity_in</span>(<span class="ident">capacity</span>, <span class="ident">Global</span>)
+        <span class="ident"><span class="self">Self</span>::with_capacity_in</span>(<span class="ident">capacity</span>, <span class="ident">Global</span>)
     }
 }
 
@@ -2742,14 +2742,14 @@
     <span class="doccomment">/// capacity for inserting the given number of elements without reallocating.</span>
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;raw&quot;</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_with_capacity_in</span>(<span class="ident">capacity</span>: <span class="ident">usize</span>, <span class="ident">alloc</span>: <span class="ident">A</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">TryReserveError</span><span class="op">&gt;</span> {
-        <span class="self">Self</span><span class="ident">::fallible_with_capacity</span>(<span class="ident">alloc</span>, <span class="ident">capacity</span>, <span class="ident">Fallibility::Fallible</span>)
+        <span class="ident"><span class="self">Self</span>::fallible_with_capacity</span>(<span class="ident">alloc</span>, <span class="ident">capacity</span>, <span class="ident">Fallibility::Fallible</span>)
     }
 
     <span class="doccomment">/// Allocates a new hash table using the given allocator, with at least enough capacity for</span>
     <span class="doccomment">/// inserting the given number of elements without reallocating.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_capacity_in</span>(<span class="ident">capacity</span>: <span class="ident">usize</span>, <span class="ident">alloc</span>: <span class="ident">A</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="comment">// Avoid `Result::unwrap_or_else` because it bloats LLVM IR.</span>
-        <span class="kw">match</span> <span class="self">Self</span><span class="ident">::fallible_with_capacity</span>(<span class="ident">alloc</span>, <span class="ident">capacity</span>, <span class="ident">Fallibility::Infallible</span>) {
+        <span class="kw">match</span> <span class="ident"><span class="self">Self</span>::fallible_with_capacity</span>(<span class="ident">alloc</span>, <span class="ident">capacity</span>, <span class="ident">Fallibility::Infallible</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">capacity</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">capacity</span>,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">unsafe</span> { <span class="ident">hint::unreachable_unchecked</span>() },
         }
@@ -2870,7 +2870,7 @@
         <span class="comment">// space for.</span>
         <span class="kw">let</span> <span class="ident">min_size</span> <span class="op">=</span> <span class="ident">usize::max</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">items</span>, <span class="ident">min_size</span>);
         <span class="kw">if</span> <span class="ident">min_size</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>());
+            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>());
             <span class="kw">return</span>;
         }
 
@@ -2887,7 +2887,7 @@
         <span class="kw">if</span> <span class="ident">min_buckets</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">buckets</span>() {
             <span class="comment">// Fast path if the table is empty</span>
             <span class="kw">if</span> <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">items</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
-                <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::with_capacity_in</span>(<span class="ident">min_size</span>, <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>())
+                <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::with_capacity_in</span>(<span class="ident">min_size</span>, <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>())
             } <span class="kw">else</span> {
                 <span class="comment">// Avoid `Result::unwrap_or_else` because it bloats LLVM IR.</span>
                 <span class="kw">if</span> <span class="self">self</span>
@@ -3337,7 +3337,7 @@
         <span class="macro">debug_assert_eq!</span>(<span class="ident">iter</span>.<span class="ident">len</span>(), <span class="self">self</span>.<span class="ident">len</span>());
         <span class="ident">RawDrain</span> {
             <span class="ident">iter</span>,
-            <span class="ident">table</span>: <span class="ident">ManuallyDrop::new</span>(<span class="ident">mem::replace</span>(<span class="self">self</span>, <span class="self">Self</span><span class="ident">::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>()))),
+            <span class="ident">table</span>: <span class="ident">ManuallyDrop::new</span>(<span class="ident">mem::replace</span>(<span class="self">self</span>, <span class="ident"><span class="self">Self</span>::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>()))),
             <span class="ident">orig_table</span>: <span class="ident">NonNull::from</span>(<span class="self">self</span>),
             <span class="ident">marker</span>: <span class="ident">PhantomData</span>,
         }
@@ -3440,13 +3440,13 @@
         <span class="ident">fallibility</span>: <span class="ident">Fallibility</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">TryReserveError</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="ident">capacity</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="prelude-val">Ok</span>(<span class="self">Self</span><span class="ident">::new_in</span>(<span class="ident">alloc</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::new_in</span>(<span class="ident">alloc</span>))
         } <span class="kw">else</span> {
             <span class="kw">unsafe</span> {
                 <span class="kw">let</span> <span class="ident">buckets</span> <span class="op">=</span>
                     <span class="ident">capacity_to_buckets</span>(<span class="ident">capacity</span>).<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">fallibility</span>.<span class="ident">capacity_overflow</span>())<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::new_uninitialized</span>(<span class="ident">alloc</span>, <span class="ident">table_layout</span>, <span class="ident">buckets</span>, <span class="ident">fallibility</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new_uninitialized</span>(<span class="ident">alloc</span>, <span class="ident">table_layout</span>, <span class="ident">buckets</span>, <span class="ident">fallibility</span>)<span class="question-mark">?</span>;
                 <span class="ident">result</span>.<span class="ident">ctrl</span>(<span class="number">0</span>).<span class="ident">write_bytes</span>(<span class="ident">EMPTY</span>, <span class="ident">result</span>.<span class="ident">num_ctrl_bytes</span>());
 
                 <span class="prelude-val">Ok</span>(<span class="ident">result</span>)
@@ -3652,7 +3652,7 @@
         <span class="ident">table_layout</span>: <span class="ident">TableLayout</span>,
         <span class="ident">capacity</span>: <span class="ident">usize</span>,
         <span class="ident">fallibility</span>: <span class="ident">Fallibility</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw">crate</span><span class="ident">::scopeguard::ScopeGuard</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>)<span class="op">&gt;</span>, <span class="ident">TryReserveError</span><span class="op">&gt;</span> {
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">crate</span>::scopeguard::ScopeGuard</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="kw">impl</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>)<span class="op">&gt;</span>, <span class="ident">TryReserveError</span><span class="op">&gt;</span> {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.<span class="ident">items</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">capacity</span>);
 
         <span class="comment">// Allocate and initialize the new table.</span>
@@ -3732,12 +3732,12 @@
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Clone</span>, <span class="ident">A</span>: <span class="ident">Allocator</span> <span class="op">+</span> <span class="ident">Clone</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">RawTable</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">A</span><span class="op">&gt;</span> {
     <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">is_empty_singleton</span>() {
-            <span class="self">Self</span><span class="ident">::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>())
+            <span class="ident"><span class="self">Self</span>::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>())
         } <span class="kw">else</span> {
             <span class="kw">unsafe</span> {
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_table</span> <span class="op">=</span> <span class="ident">ManuallyDrop::new</span>(
                     <span class="comment">// Avoid `Result::ok_or_else` because it bloats LLVM IR.</span>
-                    <span class="kw">match</span> <span class="self">Self</span><span class="ident">::new_uninitialized</span>(
+                    <span class="kw">match</span> <span class="ident"><span class="self">Self</span>::new_uninitialized</span>(
                         <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>(),
                         <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">buckets</span>(),
                         <span class="ident">Fallibility::Infallible</span>,
@@ -3760,7 +3760,7 @@
 
     <span class="kw">fn</span> <span class="ident">clone_from</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">source</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
         <span class="kw">if</span> <span class="ident">source</span>.<span class="ident">table</span>.<span class="ident">is_empty_singleton</span>() {
-            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>());
+            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new_in</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>());
         } <span class="kw">else</span> {
             <span class="kw">unsafe</span> {
                 <span class="comment">// First, drop all our elements without clearing the control bytes.</span>
@@ -3774,7 +3774,7 @@
                     }
                     (<span class="self">self</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="self">Self</span>).<span class="ident">write</span>(
                         <span class="comment">// Avoid `Result::unwrap_or_else` because it bloats LLVM IR.</span>
-                        <span class="kw">match</span> <span class="self">Self</span><span class="ident">::new_uninitialized</span>(
+                        <span class="kw">match</span> <span class="ident"><span class="self">Self</span>::new_uninitialized</span>(
                             <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">alloc</span>.<span class="ident">clone</span>(),
                             <span class="ident">source</span>.<span class="ident">buckets</span>(),
                             <span class="ident">Fallibility::Infallible</span>,
@@ -3915,7 +3915,7 @@
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">A</span>: <span class="ident">Allocator</span> <span class="op">+</span> <span class="ident">Clone</span> <span class="op">+</span> <span class="ident">Default</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">RawTable</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">A</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;inline-more&quot;</span>, <span class="ident">inline</span>)]</span>
     <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span><span class="ident">::new_in</span>(<span class="ident">Default::default</span>())
+        <span class="ident"><span class="self">Self</span>::new_in</span>(<span class="ident">Default::default</span>())
     }
 }
 
@@ -4024,7 +4024,7 @@
                 <span class="comment">//   current group to process.</span>
                 <span class="kw">let</span> <span class="ident">mid</span> <span class="op">=</span> (<span class="ident">len</span> <span class="op">/</span> <span class="number">2</span>) <span class="op">&amp;</span> <span class="op">!</span>(<span class="ident">Group::WIDTH</span> <span class="op">-</span> <span class="number">1</span>);
 
-                <span class="kw">let</span> <span class="ident">tail</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::new</span>(
+                <span class="kw">let</span> <span class="ident">tail</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new</span>(
                     <span class="self">self</span>.<span class="ident">next_ctrl</span>.<span class="ident">add</span>(<span class="ident">mid</span>),
                     <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">next_n</span>(<span class="ident">Group::WIDTH</span>).<span class="ident">next_n</span>(<span class="ident">mid</span>),
                     <span class="ident">len</span> <span class="op">-</span> <span class="ident">mid</span>,
@@ -4476,7 +4476,7 @@
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">A</span>: <span class="ident">Allocator</span> <span class="op">+</span> <span class="ident">Clone</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">RawIterHashInner</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">A</span><span class="op">&gt;</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">usize</span>;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
         <span class="kw">unsafe</span> {
             <span class="kw">loop</span> {
                 <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">bit</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">bitmask</span>.<span class="ident">next</span>() {

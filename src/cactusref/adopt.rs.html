@@ -249,11 +249,11 @@
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">core::ptr</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::link::Link</span>;
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::Rc</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::link::Link</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Rc</span>;
 
 <span class="kw">mod</span> <span class="ident">sealed</span> {
-    <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::Rc</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Rc</span>;
 
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
     <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Sealed</span> {}

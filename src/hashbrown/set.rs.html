@@ -2298,7 +2298,7 @@
 <span id="2298">2298</span>
 <span id="2299">2299</span>
 </pre><pre class="rust">
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::TryReserveError</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::TryReserveError</span>;
 <span class="kw">use</span> <span class="ident">alloc::borrow::ToOwned</span>;
 <span class="kw">use</span> <span class="ident">core::borrow::Borrow</span>;
 <span class="kw">use</span> <span class="ident">core::fmt</span>;
@@ -2307,8 +2307,8 @@
 <span class="kw">use</span> <span class="ident">core::mem</span>;
 <span class="kw">use</span> <span class="ident">core::ops</span>::{<span class="ident">BitAnd</span>, <span class="ident">BitOr</span>, <span class="ident">BitXor</span>, <span class="ident">Sub</span>};
 
-<span class="kw">use</span> <span class="kw">super</span><span class="ident">::map</span>::{<span class="self">self</span>, <span class="ident">ConsumeAllOnDrop</span>, <span class="ident">DefaultHashBuilder</span>, <span class="ident">DrainFilterInner</span>, <span class="ident">HashMap</span>, <span class="ident">Keys</span>};
-<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::raw</span>::{<span class="ident">Allocator</span>, <span class="ident">Global</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::map</span>::{<span class="self">self</span>, <span class="ident">ConsumeAllOnDrop</span>, <span class="ident">DefaultHashBuilder</span>, <span class="ident">DrainFilterInner</span>, <span class="ident">HashMap</span>, <span class="ident">Keys</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::raw</span>::{<span class="ident">Allocator</span>, <span class="ident">Global</span>};
 
 <span class="comment">// Future Optimization (FIXME!)</span>
 <span class="comment">// =============================</span>
@@ -3424,7 +3424,7 @@
 {
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;inline-more&quot;</span>, <span class="ident">inline</span>)]</span>
     <span class="kw">fn</span> <span class="ident">from_iter</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">iter</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::with_hasher_in</span>(<span class="ident">Default::default</span>(), <span class="ident">Default::default</span>());
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::with_hasher_in</span>(<span class="ident">Default::default</span>(), <span class="ident">Default::default</span>());
         <span class="ident">set</span>.<span class="ident">extend</span>(<span class="ident">iter</span>);
         <span class="ident">set</span>
     }
@@ -3879,7 +3879,7 @@
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">K</span>;
 
     <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;inline-more&quot;</span>, <span class="ident">inline</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">f</span>;
         <span class="kw">let</span> (<span class="ident">k</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">|</span><span class="ident">k</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">k</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Some</span>(<span class="ident">k</span>)
@@ -4138,8 +4138,8 @@
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">test_set</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw">super</span><span class="ident">::map::DefaultHashBuilder</span>;
-    <span class="kw">use</span> <span class="kw">super</span><span class="ident">::HashSet</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::map::DefaultHashBuilder</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::HashSet</span>;
     <span class="kw">use</span> <span class="ident">std::vec::Vec</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
@@ -4349,7 +4349,7 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_from_map</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> <span class="op">=</span> <span class="kw">crate</span><span class="ident">::HashMap::new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::HashMap::new</span>();
         <span class="ident">a</span>.<span class="ident">insert</span>(<span class="number">1</span>, ());
         <span class="ident">a</span>.<span class="ident">insert</span>(<span class="number">2</span>, ());
         <span class="ident">a</span>.<span class="ident">insert</span>(<span class="number">3</span>, ());
