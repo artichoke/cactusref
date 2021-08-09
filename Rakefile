@@ -2,6 +2,7 @@
 
 require 'open-uri'
 require 'shellwords'
+require 'bundler/audit/task'
 require 'rubocop/rake_task'
 
 task default: %i[format lint]
@@ -95,6 +96,8 @@ desc 'Run CactusRef unit tests under Miri'
 task :'test:miri' do
   sh 'cargo miri test --workspace'
 end
+
+Bundler::Audit::Task.new
 
 namespace :release do
   link_check_files = FileList.new('**/*.md') do |f|
