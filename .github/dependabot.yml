@@ -4,7 +4,7 @@ updates:
   - package-ecosystem: cargo
     directory: "/"
     schedule:
-      interval: daily
+      interval: monthly
     open-pull-requests-limit: 10
     assignees:
       - lopopolo
@@ -13,7 +13,7 @@ updates:
   - package-ecosystem: cargo
     directory: "/benchmarks"
     schedule:
-      interval: daily
+      interval: monthly
     open-pull-requests-limit: 10
     assignees:
       - lopopolo
@@ -22,7 +22,7 @@ updates:
   - package-ecosystem: bundler
     directory: "/"
     schedule:
-      interval: daily
+      interval: monthly
     open-pull-requests-limit: 10
     assignees:
       - lopopolo
