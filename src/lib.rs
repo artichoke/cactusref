@@ -140,6 +140,7 @@ mod drop;
 mod hash;
 mod link;
 mod rc;
+mod trace;
 
 // Doc modules
 #[cfg(any(doctest, docsrs))]
@@ -148,8 +149,10 @@ mod rc;
 pub mod implementing_self_referential_data_structures;
 
 pub use adopt::Adopt;
+pub use adopt::AdoptError;
 pub use rc::Rc;
 pub use rc::Weak;
+pub use trace::Trace;
 
 /// Cactus alias for [`Rc`].
 pub type CactusRef<T> = Rc<T>;
