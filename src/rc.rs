@@ -388,7 +388,7 @@ impl<T> Rc<T> {
             Rc::from_ptr(Rc::allocate_for_layout(
                 Layout::new::<T>(),
                 |layout| Global.allocate(layout),
-                |mem| mem.cast::<RcBox<MaybeUninit<T>>>(),
+                <*mut u8>::cast,
             ))
         }
     }
