@@ -999,7 +999,7 @@ impl<T> Rc<T> {
             // Copy value as bytes
             ptr::copy_nonoverlapping(
                 (box_ptr as *const T).cast::<u8>(),
-                (&mut (*ptr).value as *mut MaybeUninit<T>).cast::<u8>(),
+                ptr::addr_of_mut!((*ptr).value).cast::<u8>(),
                 value_size,
             );
 
@@ -1250,7 +1250,7 @@ impl<T: fmt::Debug> fmt::Debug for Rc<T> {
 
 impl<T> fmt::Pointer for Rc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&(&**self as *const T), f)
+        fmt::Pointer::fmt(&ptr::addr_of!(**self), f)
     }
 }
 
