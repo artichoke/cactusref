@@ -879,7 +879,7 @@ impl<T: Clone> Rc<T> {
             let mut rc = Self::new_uninit();
             unsafe {
                 let data = Rc::get_mut_unchecked(&mut rc);
-                data.as_mut_ptr().write((&**this).clone());
+                data.as_mut_ptr().write((**this).clone());
                 *this = rc.assume_init();
             }
         } else if Rc::weak_count(this) != 0 {
