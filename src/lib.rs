@@ -120,7 +120,7 @@
 //!
 //! [`std::rc::Rc`]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html
 
-#![doc(html_root_url = "https://docs.rs/cactusref/0.1.1")]
+#![doc(html_root_url = "https://docs.rs/cactusref/0.2.0")]
 #![no_std]
 
 // Ensure code blocks in README.md compile

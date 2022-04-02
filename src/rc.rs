@@ -586,7 +586,9 @@ impl<T> Rc<T> {
         let offset = data_offset(ptr);
 
         // Reverse the offset to find the original RcBox.
-        let rc_ptr = (ptr as *mut RcBox<T>).set_ptr_value((ptr as *mut u8).offset(-offset));
+        let rc_ptr = (ptr as *mut u8)
+            .offset(-offset)
+            .with_metadata_of(ptr as *mut RcBox<T>);
 
         Self::from_ptr(rc_ptr)
     }
@@ -981,7 +983,7 @@ impl<T> Rc<T> {
         Self::allocate_for_layout(
             Layout::for_value(&*ptr),
             |layout| Global.allocate(layout),
-            |mem| (ptr as *mut RcBox<T>).set_ptr_value(mem),
+            |mem| mem.with_metadata_of(ptr as *mut RcBox<T>),
         )
     }
 
@@ -1509,7 +1511,9 @@ impl<T> Weak<T> {
             let offset = data_offset(ptr);
             // Thus, we reverse the offset to get the whole RcBox.
             // SAFETY: the pointer originated from a Weak, so this offset is safe.
-            (ptr as *mut RcBox<T>).set_ptr_value((ptr as *mut u8).offset(-offset))
+            (ptr as *mut u8)
+                .offset(-offset)
+                .with_metadata_of(ptr as *mut RcBox<T>)
         };
 
         // SAFETY: we now have recovered the original Weak pointer, so can create the Weak.
