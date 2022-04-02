@@ -52,7 +52,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cactusref = "0.1.1"
+cactusref = "0.2.0"
 ```
 
 CactusRef is mostly a drop-in replacement for `std::rc::Rc`, which can be used
