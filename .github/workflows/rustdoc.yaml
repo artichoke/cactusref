@@ -8,7 +8,7 @@ name: Documentation
     branches:
       - trunk
   schedule:
-    - cron: "0 0 * * WED"
+    - cron: "0 0 * * TUE"
 concurrency:
   group: docs-${{ github.head_ref }}
 jobs:
@@ -23,13 +23,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
+      - name: Install nightly Rust toolchain
+        run: |
+          echo "::group::rustup toolchain install"
+          rustup toolchain install nightly --profile minimal
+          echo "::endgroup::"
+          echo "::group::set default toolchain"
+          rm -rf rust-toolchain
+          rustup default nightly
+          echo "::endgroup::"
+          echo "::group::rustup version"
+          rustup -Vv
+          echo "::endgroup::"
+          echo "::group::rustc version"
+          rustc -Vv
+          echo "::endgroup::"
+          echo "::group::cargo version"
+          cargo version --verbose
+          echo "::endgroup::"
 
       - name: Build Documentation
-        run: cargo doc
+        run: cargo doc --workspace
+
+      # https://github.com/artichoke/artichoke/issues/1826
+      - name: Purge sources from out dir
+        run: find . -path './target/doc/*/target/debug/build/*' | xargs rm -rf
 
       - name: Deploy Docs
         uses: peaceiris/actions-gh-pages@v3
@@ -40,3 +58,6 @@ jobs:
           publish_branch: gh-pages
           user_name: artichoke-ci
           user_email: ci@artichokeruby.org
+          # only have the most recent docs in the `gh-pages` branch
+          # https://github.com/artichoke/artichoke/issues/1826
+          force_orphan: true
