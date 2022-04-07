@@ -42,14 +42,6 @@ jobs:
           cargo version --verbose
           echo "::endgroup::"
 
-      - name: Generate Cargo.lock
-        run: |
-          if [[ ! -f "Cargo.lock" ]]; then
-            cargo generate-lockfile --verbose
-          fi
-
-      - uses: Swatinem/rust-cache@v1
-
       - name: Build Documentation
         run: cargo doc --workspace
 
