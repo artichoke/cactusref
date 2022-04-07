@@ -3,6 +3,8 @@ use alloc::vec;
 use core::mem::{self, MaybeUninit};
 use core::ptr;
 
+#[cfg(doc)]
+use crate::adopt::Adopt;
 use crate::hash::HashMap;
 use crate::link::{Kind, Link};
 use crate::rc::RcInnerPtr;
