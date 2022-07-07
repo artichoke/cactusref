@@ -1869,13 +1869,13 @@ impl<'a> RcInnerPtr for WeakInner<'a> {
 
 impl<T> borrow::Borrow<T> for Rc<T> {
     fn borrow(&self) -> &T {
-        &**self
+        self
     }
 }
 
 impl<T> AsRef<T> for Rc<T> {
     fn as_ref(&self) -> &T {
-        &**self
+        self
     }
 }
 
