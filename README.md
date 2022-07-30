@@ -150,7 +150,8 @@ All features are enabled by default.
 - **std** - Enable linking to the [Rust Standard Library]. Enabling this feature
   adds [`Error`] implementations to error types in this crate.
 
-[`error`]: https://doc.rust-lang.org/stable/std/error/trait.Error.html
+[rust standard library]: https://doc.rust-lang.org/nightly/std/
+[`error`]: https://doc.rust-lang.org/nightly/std/error/trait.Error.html
 
 ## License
 
