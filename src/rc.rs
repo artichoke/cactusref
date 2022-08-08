@@ -229,7 +229,11 @@
 //! [`Cell`]: core::cell::Cell
 //! [`RefCell`]: core::cell::RefCell
 //! [send]: core::marker::Send
-//! [arc]: std::sync::Arc
+#![cfg_attr(feature = "std", doc = "[arc]: std::sync::Arc")]
+#![cfg_attr(
+    not(feature = "std"),
+    doc = "[arc]: https://doc.rust-lang.org/stable/std/sync/struct.Arc.html"
+)]
 //! [`Deref`]: core::ops::Deref
 //! [downgrade]: Rc::downgrade
 //! [upgrade]: Weak::upgrade

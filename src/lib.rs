@@ -63,9 +63,9 @@
 //! CactusRef does not implement the following APIs that are present on
 //! [`std::rc::Rc`]:
 //!
-//! - [`std::rc::Rc::downcast`](std::rc::Rc::downcast)
-//! - [`CoerceUnsized`](core::ops::CoerceUnsized)
-//! - [`DispatchFromDyn`](core::ops::DispatchFromDyn)
+//! - [`std::rc::Rc::downcast`]
+//! - [`CoerceUnsized`]
+//! - [`DispatchFromDyn`]
 //! - `From<Cow<'_, T>>`
 //!
 //! CactusRef cannot be used with unsized types like `[T]` or `str`.
@@ -118,7 +118,10 @@
 //! The algorithm supports arbitrarily large object graphs and will not overflow
 //! the stack during the reachability trace.
 //!
-//! [`std::rc::Rc`]: https://doc.rust-lang.org/stable/std/rc/struct.Rc.html
+//! [`std::rc::Rc`]: alloc::rc::Rc
+//! [`std::rc::Rc::downcast`]: alloc::rc::Rc::downcast
+//! [`CoerceUnsized`]: core::ops::CoerceUnsized
+//! [`DispatchFromDyn`]: core::ops::DispatchFromDyn
 
 #![doc(html_root_url = "https://docs.rs/cactusref/0.2.0")]
 #![no_std]
