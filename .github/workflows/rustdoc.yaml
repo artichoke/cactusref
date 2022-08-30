@@ -76,7 +76,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: rustdoc
     if: github.ref == 'refs/heads/trunk'
     steps:
       - name: Deploy to GitHub Pages
