@@ -8,7 +8,6 @@ use core::ptr;
 #[cfg(doc)]
 use crate::adopt::Adopt;
 use crate::graph::Graph;
-use crate::hash::HashMap;
 use crate::hash::HashSet;
 use crate::link::{Kind, Link};
 use crate::rc::RcInnerPtr;

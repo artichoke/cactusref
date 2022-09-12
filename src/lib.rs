@@ -142,6 +142,7 @@ mod adopt;
 mod drop;
 mod graph;
 mod hash;
+mod link;
 mod rc;
 
 // Doc modules
