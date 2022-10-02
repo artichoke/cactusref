@@ -1298,7 +1298,7 @@ impl<T> From<Box<T>> for Rc<T> {
 
 /// `Weak` is a version of [`Rc`] that holds a non-owning reference to the
 /// managed allocation. The allocation is accessed by calling [`upgrade`] on the `Weak`
-/// pointer, which returns an [`Option`]`<`[`Rc`]`<T>>`.
+/// pointer, which returns an <code>[Option]<[Rc]\<T>></code>.
 ///
 /// Since a `Weak` reference does not count towards ownership, it will not
 /// prevent the value stored in the allocation from being dropped, and `Weak` itself makes no
