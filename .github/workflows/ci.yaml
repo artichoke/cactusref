@@ -17,13 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            target: x86_64-apple-darwin
     env:
       RUSTFLAGS: -D warnings
       RUST_BACKTRACE: 1
@@ -50,19 +43,6 @@ jobs:
 
       - name: Test with no default features
         run: cargo test --no-default-features
-
-      - name: Install nightly Rust toolchain
-        if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          target: ${{ matrix.target }}
-
-      - name: Test with leak sanitizer and all features
-        if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
-        run: cargo test --all-features --target ${{ matrix.target }}
-        env:
-          RUSTFLAGS: "-Z sanitizer=leak"
 
   build_x86:
     name: Build 32-bit
@@ -107,6 +87,35 @@ jobs:
 
       - name: Test with no default features
         run: cargo test --no-default-features --target ${{ matrix.target }}
+
+  leaksan:
+    name: Leak sanitizer
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+    env:
+      RUSTFLAGS: -D warnings
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: artichoke/setup-rust/build-and-test@v1
+        with:
+          toolchain: nightly
+          target: ${{ matrix.target }}
+
+      - name: Test with leak sanitizer and all features
+        run: cargo test --all-features --target ${{ matrix.target }}
+        env:
+          RUSTFLAGS: "-Z sanitizer=leak"
 
   rust:
     name: Lint and format Rust
