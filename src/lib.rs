@@ -12,6 +12,7 @@
 #![warn(clippy::cargo)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::inline_always)]
+#![allow(clippy::let_underscore_untyped)]
 #![allow(clippy::option_if_let_else)]
 #![allow(unknown_lints)]
 #![warn(missing_copy_implementations)]
