@@ -260,6 +260,7 @@ use alloc::boxed::Box;
 use crate::link::Links;
 
 #[cfg(test)]
+#[allow(clippy::redundant_clone)]
 mod tests;
 
 // This is repr(C) to future-proof against possible field-reordering, which
