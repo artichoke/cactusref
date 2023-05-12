@@ -2,6 +2,9 @@
   "ignorePatterns": [
     {
       "pattern": "img.shields.io"
+    },
+    {
+      "pattern": "^https://twitter.com/artichokeruby"
     }
   ],
   "replacementPatterns": [],
