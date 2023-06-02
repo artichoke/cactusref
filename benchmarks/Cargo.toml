@@ -15,7 +15,7 @@ harness = false
 
 [dev-dependencies]
 # Benchmarking support on stable Rust.
-criterion = "0.4.0"
+criterion = "0.5.1"
 # benchmark target
 cactusref = { path = ".." }
 env_logger = { version = "0.10.0", default-features = false }
