@@ -173,10 +173,7 @@ impl<T> RcInnerPtr for Link<T> {
 impl<T> Clone for Link<T> {
     #[inline]
     fn clone(&self) -> Self {
-        Self {
-            ptr: self.ptr,
-            kind: self.kind,
-        }
+        *self
     }
 }
 
