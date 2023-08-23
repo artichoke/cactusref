@@ -91,7 +91,7 @@ fn leak_doubly_linked_list() {
     log::info!("doubly linked list");
 
     let list = iter::repeat(())
-        .map(|_| "a".repeat(1024 * 1024))
+        .map(|()| "a".repeat(1024 * 1024))
         .take(10)
         .collect::<Vec<_>>();
     let mut list = List::from(list);
