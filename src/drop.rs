@@ -240,7 +240,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
         let cycle_strong_refs = {
             let mut links = (*rcbox).links().borrow_mut();
             links
-                .drain_filter(|link, _| {
+                .extract_if(|link, _| {
                     if let Kind::Forward | Kind::Loopback = link.kind() {
                         cycle.contains_key(link)
                     } else {

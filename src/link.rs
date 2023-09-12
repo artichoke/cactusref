@@ -6,7 +6,7 @@ use core::hash::{Hash, Hasher};
 use core::num::NonZeroUsize;
 use core::ptr::{self, NonNull};
 
-use crate::hash::hash_map::{DrainFilter, Iter};
+use crate::hash::hash_map::{ExtractIf, Iter};
 use crate::hash::HashMap;
 use crate::rc::{RcBox, RcInnerPtr};
 
@@ -70,11 +70,11 @@ impl<T> Links<T> {
     }
 
     #[inline]
-    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, Link<T>, usize, F>
+    pub fn extract_if<F>(&mut self, f: F) -> ExtractIf<'_, Link<T>, usize, F>
     where
         F: FnMut(&Link<T>, &mut usize) -> bool,
     {
-        self.registry.drain_filter(f)
+        self.registry.extract_if(f)
     }
 }
 
