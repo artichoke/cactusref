@@ -1,6 +1,6 @@
 [package]
 name = "cactusref"
-version = "0.3.0" # remember to set `html_root_url` in `src/lib.rs`.
+version = "0.4.0" # remember to set `html_root_url` in `src/lib.rs`.
 authors = ["Ryan Lopopolo <rjl@hyperbo.la>"]
 license = "MIT"
 edition = "2021"
@@ -21,7 +21,7 @@ default = ["std"]
 std = []
 
 [dependencies]
-hashbrown = { version = "0.13.1", default-features = false, features = ["inline-more"] }
+hashbrown = { version = "0.14.0", default-features = false, features = ["inline-more"] }
 log = "0.4.6"
 rustc-hash = { version = "1.1.0", default-features = false }
 
@@ -32,7 +32,7 @@ env_logger = { version = "0.10.0", default-features = false }
 # Check that crate versions are properly updated in documentation and code when
 # bumping the version.
 [dev-dependencies.version-sync]
-version = "0.9.3"
+version = "0.9.5"
 default-features = false
 features = ["markdown_deps_updated", "html_root_url_updated"]
 

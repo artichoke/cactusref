@@ -126,7 +126,7 @@
 //! [`CoerceUnsized`]: core::ops::CoerceUnsized
 //! [`DispatchFromDyn`]: core::ops::DispatchFromDyn
 
-#![doc(html_root_url = "https://docs.rs/cactusref/0.3.0")]
+#![doc(html_root_url = "https://docs.rs/cactusref/0.4.0")]
 #![no_std]
 
 // Ensure code blocks in README.md compile
