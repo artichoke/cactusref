@@ -32,7 +32,7 @@ env_logger = { version = "0.10.0", default-features = false }
 # Check that crate versions are properly updated in documentation and code when
 # bumping the version.
 [dev-dependencies.version-sync]
-version = "0.9.3"
+version = "0.9.5"
 default-features = false
 features = ["markdown_deps_updated", "html_root_url_updated"]
 
