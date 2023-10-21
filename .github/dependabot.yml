@@ -1,0 +1,39 @@
+---
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      gha-deps:
+        patterns:
+          - "*"
+    assignees:
+      - lopopolo
+    labels:
+      - A-deps
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      cargo-deps:
+        patterns:
+          - "*"
+    assignees:
+      - lopopolo
+    labels:
+      - A-deps
+  - package-ecosystem: bundler
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      bundler-deps:
+        patterns:
+          - "*"
+    assignees:
+      - lopopolo
+    labels:
+      - A-deps
