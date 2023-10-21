@@ -1,3 +1,5 @@
+#![allow(clippy::iter_without_into_iter)]
+
 //! This module includes data structures for building an object graph.
 
 use core::cell::Cell;
