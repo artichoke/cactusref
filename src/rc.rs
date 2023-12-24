@@ -261,6 +261,7 @@ use crate::link::Links;
 
 #[cfg(test)]
 #[allow(clippy::redundant_clone)]
+#[allow(clippy::uninlined_format_args)]
 mod tests;
 
 // This is repr(C) to future-proof against possible field-reordering, which

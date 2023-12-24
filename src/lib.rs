@@ -14,6 +14,7 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::inline_always)]
 #![allow(clippy::let_underscore_untyped)]
+#![allow(clippy::manual_let_else)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::option_if_let_else)]
 #![allow(clippy::needless_pass_by_ref_mut)]
