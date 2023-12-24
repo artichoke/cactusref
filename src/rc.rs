@@ -1006,7 +1006,7 @@ impl<T> Rc<T> {
 
             // Copy value as bytes
             ptr::copy_nonoverlapping(
-                (box_ptr as *const T).cast::<u8>(),
+                box_ptr.cast_const().cast::<u8>(),
                 ptr::addr_of_mut!((*ptr).value).cast::<u8>(),
                 value_size,
             );
@@ -1508,7 +1508,7 @@ impl<T> Weak<T> {
     pub unsafe fn from_raw(ptr: *const T) -> Self {
         // See Weak::as_ptr for context on how the input pointer is derived.
 
-        let ptr = if is_dangling(ptr as *mut T) {
+        let ptr = if is_dangling(ptr.cast_mut()) {
             // This is a dangling Weak.
             ptr as *mut RcBox<T>
         } else {
