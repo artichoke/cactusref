@@ -5,6 +5,9 @@
     },
     {
       "pattern": "^https://twitter.com/artichokeruby"
+    },
+    {
+      "pattern": "^https://www.reddit.com/r/rust/"
     }
   ],
   "replacementPatterns": [],
