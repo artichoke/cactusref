@@ -1,10 +1,10 @@
 [package]
 name = "cactusref"
-version = "0.4.0" # remember to set `html_root_url` in `src/lib.rs`.
+version = "0.5.0" # remember to set `html_root_url` in `src/lib.rs`.
 authors = ["Ryan Lopopolo <rjl@hyperbo.la>"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.56.0"
+rust-version = "1.77.0"
 readme = "README.md"
 repository = "https://github.com/artichoke/cactusref"
 documentation = "https://docs.rs/cactusref"

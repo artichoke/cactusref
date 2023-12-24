@@ -7,6 +7,7 @@
     slice_ptr_get
 )]
 #![allow(incomplete_features)]
+#![allow(internal_features)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::cargo)]
@@ -126,7 +127,7 @@
 //! [`CoerceUnsized`]: core::ops::CoerceUnsized
 //! [`DispatchFromDyn`]: core::ops::DispatchFromDyn
 
-#![doc(html_root_url = "https://docs.rs/cactusref/0.4.0")]
+#![doc(html_root_url = "https://docs.rs/cactusref/0.5.0")]
 #![no_std]
 
 // Ensure code blocks in README.md compile
