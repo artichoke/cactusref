@@ -1,0 +1,22 @@
+{
+  "name": "@artichokeruby/cactusref",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cycle-aware reference counting smart pointer",
+  "keywords": [
+    "garbage-collection",
+    "gc",
+    "memory-management",
+    "rust"
+  ],
+  "repository": "github:artichoke/cactusref",
+  "author": "Ryan Lopopolo <rjl@hyperbo.la> (https://hyperbo.la/)",
+  "homepage": "https://www.artichokeruby.org",
+  "bugs": "https://github.com/artichoke/cactusref/issues",
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  },
+  "scripts": {
+    "fmt": "prettier --write \"**/*\""
+  }
+}
