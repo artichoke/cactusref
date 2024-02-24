@@ -243,11 +243,10 @@
 use core::borrow;
 use core::cell::{Cell, RefCell};
 use core::cmp::Ordering;
-use core::convert::From;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::intrinsics::abort;
-use core::marker::{PhantomData, Unpin};
+use core::marker::PhantomData;
 use core::mem::{self, ManuallyDrop, MaybeUninit};
 use core::ops::Deref;
 use core::pin::Pin;
@@ -1826,11 +1825,6 @@ pub(crate) trait RcInnerPtr {
     #[inline]
     fn dec_weak(&self) {
         self.weak_ref().set(self.weak() - 1);
-    }
-
-    #[inline]
-    fn kill(&self) {
-        self.strong_ref().set(0);
     }
 
     #[inline]

@@ -18,6 +18,7 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::option_if_let_else)]
 #![allow(clippy::needless_pass_by_ref_mut)]
+#![allow(clippy::ref_as_ptr)]
 #![allow(unknown_lints)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
