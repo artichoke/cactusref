@@ -25,7 +25,7 @@ impl<T> List<T> {
             Rc::unadopt(&head, tail);
             Rc::unadopt(tail, &head);
 
-            tail.borrow_mut().next = next.clone();
+            tail.borrow_mut().next.clone_from(&next);
             if let Some(ref next) = next {
                 unsafe {
                     Rc::adopt_unchecked(tail, next);
@@ -36,7 +36,7 @@ impl<T> List<T> {
             Rc::unadopt(&head, next);
             Rc::unadopt(next, &head);
 
-            next.borrow_mut().prev = tail.clone();
+            next.borrow_mut().prev.clone_from(&tail);
             if let Some(ref tail) = tail {
                 unsafe {
                     Rc::adopt_unchecked(next, tail);
