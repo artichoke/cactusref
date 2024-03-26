@@ -1,0 +1,77 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Single-threaded, cycle-aware, reference-counting pointers. ‘Rc’ stands for ‘Reference Counted’."><title>cactusref - Rust</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="cactusref" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../static.files/storage-4c98445ec4002617.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../cactusref/index.html">cactusref</a><span class="version">0.5.0</span></h2></div><div class="sidebar-elems"><ul class="block">
+            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#traits">Traits</a></li><li><a href="#types">Type Aliases</a></li></ul></section></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../cactusref/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">cactusref</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/cactusref/lib.rs.html#1-167">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Single-threaded, cycle-aware, reference-counting pointers. ‘Rc’ stands
+for ‘Reference Counted’.</p>
+<p>The type <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc&lt;T&gt;</code></a> provides shared ownership of a value of type <code>T</code>,
+allocated in the heap. Invoking <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" title="method core::clone::Clone::clone"><code>clone</code></a> on <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc</code></a> produces a new pointer
+to the same value in the heap. When the last externally reachable <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc</code></a>
+pointer to a given value is destroyed, the pointed-to value is also
+destroyed.</p>
+<p><code>Rc</code> can <strong>detect and deallocate cycles</strong> of <code>Rc</code>s through the use of
+<a href="trait.Adopt.html" title="trait cactusref::Adopt"><code>Adopt</code></a>. Cycle detection is opt-in and no reachability checks are
+performed unless graphs have adoptions.</p>
+<h2 id="nightly"><a class="doc-anchor" href="#nightly">§</a>Nightly</h2>
+<p>CactusRef depends on several unstable Rust features and can only be built
+on a nightly toolchain.</p>
+<h2 id="maturity"><a class="doc-anchor" href="#maturity">§</a>Maturity</h2>
+<p>CactusRef is experimental. This crate has several limitations:</p>
+<ul>
+<li>CactusRef is nightly only.</li>
+<li>Cycle detection requires <a href="trait.Adopt.html" title="trait cactusref::Adopt">unsafe code</a> to use.</li>
+</ul>
+<p>CactusRef is a non-trivial extension to <code>std::rc::Rc</code> and has not been
+proven to be safe. Although CactusRef makes a best effort to abort the
+program if it detects a dangling <code>Rc</code>, this crate may be unsound.</p>
+<h2 id="cactusref-vs-stdrc"><a class="doc-anchor" href="#cactusref-vs-stdrc">§</a>CactusRef vs. <code>std::rc</code></h2>
+<p>The <code>Rc</code> in CactusRef is derived from <a href="https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html" title="struct alloc::rc::Rc"><code>std::rc::Rc</code></a> and CactusRef
+implements most of the API from <code>std</code>.</p>
+<p>CactusRef does not implement the following APIs that are present on
+<a href="https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html" title="struct alloc::rc::Rc"><code>std::rc::Rc</code></a>:</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html#method.downcast" title="method alloc::rc::Rc::downcast"><code>std::rc::Rc::downcast</code></a></li>
+<li><a href="https://doc.rust-lang.org/nightly/core/ops/unsize/trait.CoerceUnsized.html" title="trait core::ops::unsize::CoerceUnsized"><code>CoerceUnsized</code></a></li>
+<li><a href="https://doc.rust-lang.org/nightly/core/ops/unsize/trait.DispatchFromDyn.html" title="trait core::ops::unsize::DispatchFromDyn"><code>DispatchFromDyn</code></a></li>
+<li><code>From&lt;Cow&lt;'_, T&gt;&gt;</code></li>
+</ul>
+<p>CactusRef cannot be used with unsized types like <code>[T]</code> or <code>str</code>.</p>
+<p>If you do not depend on these APIs, CactusRef is a drop-in replacement for
+<a href="https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html" title="struct alloc::rc::Rc"><code>std::rc::Rc</code></a>.</p>
+<p>Like <a href="https://doc.rust-lang.org/stable/std/rc/index.html"><code>std::rc</code></a>, <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc</code></a> and <a href="struct.Weak.html" title="struct cactusref::Weak"><code>Weak</code></a> are not <code>Send</code> and are not <code>Sync</code>.</p>
+<h2 id="building-an-object-graph"><a class="doc-anchor" href="#building-an-object-graph">§</a>Building an object graph</h2>
+<p>CactusRef smart pointers can be used to implement a tracing garbage
+collector local to a graph objects. Graphs of CactusRefs are cycle-aware and
+can deallocate a cycle of strong references that is otherwise unreachable
+from the rest of the object graph, unlike <a href="https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html" title="struct alloc::rc::Rc"><code>std::rc::Rc</code></a>.</p>
+<p><code>CactusRef</code> relies on proper use of <a href="trait.Adopt.html#tymethod.adopt_unchecked" title="associated function cactusref::Adopt::adopt_unchecked"><code>Adopt::adopt_unchecked</code></a> and <a href="trait.Adopt.html#tymethod.unadopt" title="associated function cactusref::Adopt::unadopt"><code>Adopt::unadopt</code></a>
+to maintain bookkeeping about the object graph for breaking cycles. These
+functions are unsafe because improperly managing the bookkeeping can cause
+the <code>Rc</code> drop implementation to deallocate cycles while they are still
+externally reachable. Failure to uphold <a href="trait.Adopt.html" title="trait cactusref::Adopt"><code>Adopt</code></a>’s safety invariants will
+result in <em><a href="https://doc.rust-lang.org/reference/behavior-considered-undefined.html">undefined behavior</a></em> and held <code>Rc</code>s that point to members of the
+now deallocated cycle may dangle.</p>
+<p>CactusRef makes a best-effort attempt to abort the program if it detects an
+access to a dangling <code>Rc</code>.</p>
+<h2 id="cycle-detection"><a class="doc-anchor" href="#cycle-detection">§</a>Cycle Detection</h2>
+<p><code>Rc</code> implements <a href="trait.Adopt.html" title="trait cactusref::Adopt"><code>Adopt</code></a> to log bookkeeping entries for strong ownership
+links to other <code>Rc</code>s that may form a cycle. The ownership links tracked by
+these bookkeeping entries form an object graph of reachable <code>Rc</code>s. On
+<code>drop</code>, <code>Rc</code> uses these entries to conduct a reachability trace of the
+object graph to determine if it is part of an <em>orphaned cycle</em>. An orphaned
+cycle is a cycle where the only strong references to all nodes in the cycle
+come from other nodes in the cycle.</p>
+<p>Cycle detection is a zero-cost abstraction. If you never
+<code>use cactusref::Adopt;</code>, <code>drop</code> uses the same implementation as
+<a href="https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html" title="struct alloc::rc::Rc"><code>std::rc::Rc</code></a> (and leaks in the same way as <code>std::rc::Rc</code> if you form a
+cycle of strong references). The only costs you pay are the memory costs of
+one empty hash map used to track adoptions and an if statement to check if
+these structures are empty on <code>drop</code>.</p>
+<p>Cycle detection uses breadth-first search for traversing the object graph.
+The algorithm supports arbitrarily large object graphs and will not overflow
+the stack during the reachability trace.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="implementing_self_referential_data_structures/index.html" title="mod cactusref::implementing_self_referential_data_structures">implementing_self_referential_data_structures</a></div><div class="desc docblock-short">Examples of implementing self-referential data structures with CactusRef.
+<code>CactusRef</code> can be used to implement collections that own strong references
+to themselves.</div></li></ul><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Rc.html" title="struct cactusref::Rc">Rc</a></div><div class="desc docblock-short">A single-threaded reference-counting pointer. ‘Rc’ stands for ‘Reference
+Counted’.</div></li><li><div class="item-name"><a class="struct" href="struct.Weak.html" title="struct cactusref::Weak">Weak</a></div><div class="desc docblock-short"><code>Weak</code> is a version of <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc</code></a> that holds a non-owning reference to the
+managed allocation. The allocation is accessed by calling <a href="struct.Weak.html#method.upgrade" title="method cactusref::Weak::upgrade"><code>upgrade</code></a> on the <code>Weak</code>
+pointer, which returns an <code><a href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a href="struct.Rc.html" title="struct cactusref::Rc">Rc</a>&lt;T&gt;&gt;</code>.</div></li></ul><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.Adopt.html" title="trait cactusref::Adopt">Adopt</a></div><div class="desc docblock-short">Build a graph of linked <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc</code></a> smart pointers to enable busting cycles on
+drop.</div></li></ul><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.CactusRef.html" title="type cactusref::CactusRef">CactusRef</a></div><div class="desc docblock-short">Cactus alias for <a href="struct.Rc.html" title="struct cactusref::Rc"><code>Rc</code></a>.</div></li><li><div class="item-name"><a class="type" href="type.CactusWeakRef.html" title="type cactusref::CactusWeakRef">CactusWeakRef</a></div><div class="desc docblock-short">Cactus alias for <a href="struct.Weak.html" title="struct cactusref::Weak"><code>Weak</code></a>.</div></li></ul></section></div></main></body></html>

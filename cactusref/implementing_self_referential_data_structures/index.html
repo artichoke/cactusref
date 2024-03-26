@@ -1,0 +1,117 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Examples of implementing self-referential data structures with CactusRef. `CactusRef` can be used to implement collections that own strong references to themselves."><title>cactusref::implementing_self_referential_data_structures - Rust</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cactusref" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (0824b300e 2024-03-24)" data-channel="nightly" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../cactusref/index.html">cactusref</a><span class="version">0.5.0</span></h2></div><h2 class="location"><a href="#">Module implementing_self_referential_data_structures</a></h2><div class="sidebar-elems"><h2><a href="../index.html">In crate cactusref</a></h2></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../cactusref/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../index.html">cactusref</a>::<wbr><a class="mod" href="#">implementing_self_referential_data_structures</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/cactusref/doc/implementing_self_referential_data_structures.rs.html#1-118">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Examples of implementing self-referential data structures with CactusRef.
+<code>CactusRef</code> can be used to implement collections that own strong references
+to themselves.</p>
+<h2 id="doubly-linked-list"><a class="doc-anchor" href="#doubly-linked-list">§</a>Doubly-linked List</h2>
+<p>The following implements a doubly-linked list that is fully deallocated once
+the <code>list</code> binding is dropped.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::iter;
+
+<span class="kw">use </span>cactusref::{Adopt, Rc};
+
+<span class="kw">struct </span>Node&lt;T&gt; {
+    <span class="kw">pub </span>prev: <span class="prelude-ty">Option</span>&lt;Rc&lt;RefCell&lt;<span class="self">Self</span>&gt;&gt;&gt;,
+    <span class="kw">pub </span>next: <span class="prelude-ty">Option</span>&lt;Rc&lt;RefCell&lt;<span class="self">Self</span>&gt;&gt;&gt;,
+    <span class="kw">pub </span>data: T,
+}
+
+<span class="kw">struct </span>List&lt;T&gt; {
+    <span class="kw">pub </span>head: <span class="prelude-ty">Option</span>&lt;Rc&lt;RefCell&lt;Node&lt;T&gt;&gt;&gt;&gt;,
+}
+
+<span class="kw">impl</span>&lt;T&gt; List&lt;T&gt; {
+    <span class="kw">fn </span>pop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Rc&lt;RefCell&lt;Node&lt;T&gt;&gt;&gt;&gt; {
+        <span class="kw">let </span>head = <span class="self">self</span>.head.take()<span class="question-mark">?</span>;
+        <span class="kw">let </span>tail = head.borrow_mut().prev.take();
+        <span class="kw">let </span>next = head.borrow_mut().next.take();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>tail) = tail {
+            Rc::unadopt(<span class="kw-2">&amp;</span>head, tail);
+            Rc::unadopt(tail, <span class="kw-2">&amp;</span>head);
+
+            tail.borrow_mut().next.clone_from(<span class="kw-2">&amp;</span>next);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>next) = next {
+                <span class="kw">unsafe </span>{
+                    Rc::adopt_unchecked(tail, next);
+                }
+            }
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>next) = next {
+            Rc::unadopt(<span class="kw-2">&amp;</span>head, next);
+            Rc::unadopt(next, <span class="kw-2">&amp;</span>head);
+
+            next.borrow_mut().prev.clone_from(<span class="kw-2">&amp;</span>tail);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>tail) = tail {
+                <span class="kw">unsafe </span>{
+                    Rc::adopt_unchecked(next, tail);
+                }
+            }
+        }
+        <span class="self">self</span>.head = next;
+        <span class="prelude-val">Some</span>(head)
+    }
+}
+
+<span class="kw">impl</span>&lt;T&gt; From&lt;Vec&lt;T&gt;&gt; <span class="kw">for </span>List&lt;T&gt; {
+    <span class="kw">fn </span>from(list: Vec&lt;T&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>nodes = list
+            .into_iter()
+            .map(|data| {
+                Rc::new(RefCell::new(Node {
+                    prev: <span class="prelude-val">None</span>,
+                    next: <span class="prelude-val">None</span>,
+                    data,
+                }))
+            })
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..nodes.len() - <span class="number">1 </span>{
+            <span class="kw">let </span>curr = <span class="kw-2">&amp;</span>nodes[i];
+            <span class="kw">let </span>next = <span class="kw-2">&amp;</span>nodes[i + <span class="number">1</span>];
+            curr.borrow_mut().next = <span class="prelude-val">Some</span>(Rc::clone(next));
+            next.borrow_mut().prev = <span class="prelude-val">Some</span>(Rc::clone(curr));
+            <span class="kw">unsafe </span>{
+                Rc::adopt_unchecked(curr, next);
+                Rc::adopt_unchecked(next, curr);
+            }
+        }
+        <span class="kw">let </span>tail = <span class="kw-2">&amp;</span>nodes[nodes.len() - <span class="number">1</span>];
+        <span class="kw">let </span>head = <span class="kw-2">&amp;</span>nodes[<span class="number">0</span>];
+        tail.borrow_mut().next = <span class="prelude-val">Some</span>(Rc::clone(head));
+        head.borrow_mut().prev = <span class="prelude-val">Some</span>(Rc::clone(tail));
+        <span class="kw">unsafe </span>{
+            Rc::adopt_unchecked(tail, head);
+            Rc::adopt_unchecked(head, tail);
+        }
+
+        <span class="kw">let </span>head = Rc::clone(head);
+        <span class="self">Self </span>{ head: <span class="prelude-val">Some</span>(head) }
+    }
+}
+
+<span class="kw">let </span>list = iter::repeat(())
+    .map(|<span class="kw">_</span>| <span class="string">"a"</span>.repeat(<span class="number">1024 </span>* <span class="number">1024</span>))
+    .take(<span class="number">10</span>)
+    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+<span class="kw">let </span><span class="kw-2">mut </span>list = List::from(list);
+
+<span class="kw">let </span>head = list.pop().unwrap();
+<span class="macro">assert_eq!</span>(Rc::strong_count(<span class="kw-2">&amp;</span>head), <span class="number">1</span>);
+<span class="macro">assert!</span>(head.borrow().data.starts_with(<span class="string">'a'</span>));
+
+<span class="comment">// The new head of the list is owned three times:
+//
+// - itself.
+// - the `prev` pointer to it from it's next element.
+// - the `next` pointer from the list's tail.
+</span><span class="macro">assert_eq!</span>(list.head.as_ref().map(Rc::strong_count), <span class="prelude-val">Some</span>(<span class="number">3</span>));
+
+<span class="comment">// The popped head is no longer part of the graph and can be safely dropped
+// and deallocated.
+</span><span class="kw">let </span>weak = Rc::downgrade(<span class="kw-2">&amp;</span>head);
+drop(head);
+<span class="macro">assert!</span>(weak.upgrade().is_none());
+
+drop(list);
+<span class="comment">// all memory consumed by the list nodes is reclaimed.</span></code></pre></div>
+</div></details></section></div></main></body></html>

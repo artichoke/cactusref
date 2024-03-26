@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["implementing_self_referential_data_structures"],"struct":["Rc","Weak"],"trait":["Adopt"],"type":["CactusRef","CactusWeakRef"]};
