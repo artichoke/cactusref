@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.1.4
+        uses: actions/checkout@v4.1.6
 
       - name: Install Rust toolchain
         uses: artichoke/setup-rust/build-and-test@v1.11.0
