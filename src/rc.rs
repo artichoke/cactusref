@@ -1000,7 +1000,7 @@ impl<T> Rc<T> {
             let box_unique = NonNull::new_unchecked(box_unique);
             let box_ptr = box_unique.as_ptr();
 
-            let value_size = mem::size_of_val(&*box_ptr);
+            let value_size = size_of_val(&*box_ptr);
             let ptr = Self::allocate_for_ptr(box_ptr);
 
             // Copy value as bytes

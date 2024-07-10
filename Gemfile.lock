@@ -47,4 +47,4 @@ DEPENDENCIES
   rubocop-rake (~> 0.6)
 
 BUNDLED WITH
-   2.5.3
+   2.5.15
