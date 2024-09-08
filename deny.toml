@@ -1,21 +1,11 @@
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-notice = "warn"
 ignore = []
 
 [licenses]
-unlicensed = "deny"
 allow = [
   "Apache-2.0",
   "MIT",
-  "Unicode-DFS-2016",
 ]
-deny = []
-copyleft = "deny"
-allow-osi-fsf-free = "neither"
-default = "deny"
-confidence-threshold = 0.8
 
 [bans]
 multiple-versions = "deny"
