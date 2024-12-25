@@ -1855,7 +1855,7 @@ impl<T> RcInnerPtr for RcBox<T> {
     }
 }
 
-impl<'a> RcInnerPtr for WeakInner<'a> {
+impl RcInnerPtr for WeakInner<'_> {
     #[inline(always)]
     fn weak_ref(&self) -> &Cell<usize> {
         self.weak
