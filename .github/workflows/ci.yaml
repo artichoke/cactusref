@@ -113,6 +113,8 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Test with leak sanitizer and all features
+        # LeakSanitzier is broken: https://github.com/rust-lang/rust/issues/111073
+        if: false
         run: cargo test --all-features --target ${{ matrix.target }}
         env:
           RUSTFLAGS: "-Z sanitizer=leak"
