@@ -14,7 +14,7 @@
   "homepage": "https://www.artichokeruby.org",
   "bugs": "https://github.com/artichoke/cactusref/issues",
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "^3.4.1"
   },
   "scripts": {
     "fmt": "prettier --write \"**/*\""
