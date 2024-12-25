@@ -95,22 +95,3 @@ task :'test:miri' do
 end
 
 Bundler::Audit::Task.new
-
-namespace :release do
-  link_check_files = FileList.new('**/*.md') do |f|
-    f.exclude('node_modules/**/*')
-    f.exclude('**/target/**/*')
-    f.exclude('**/vendor/*/**/*')
-    f.include('*.md')
-    f.include('**/vendor/*.md')
-  end
-
-  link_check_files.sort.uniq.each do |markdown|
-    desc 'Check for broken links in markdown files'
-    task markdown_link_check: markdown do
-      command = ['npx', 'markdown-link-check', '--config', '.github/markdown-link-check.json', markdown]
-      sh command.shelljoin
-      sleep(rand(1..5))
-    end
-  end
-end
