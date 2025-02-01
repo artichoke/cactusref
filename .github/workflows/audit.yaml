@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@4a9ddd6f338a97768b8006bf671dfbad383215f4 # v1.207.0
+        uses: ruby/setup-ruby@2654679fe7f7c29875c669398a8ec0791b8a64a1 # v1.215.0
         with:
           ruby-version: ".ruby-version"
           bundler-cache: true
