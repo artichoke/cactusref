@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/miri@v2.0.0
+        uses: artichoke/setup-rust/miri@v2.0.1
         with:
           toolchain: nightly
 
