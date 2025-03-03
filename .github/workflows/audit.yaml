@@ -57,3 +57,4 @@ jobs:
           arguments: --locked --all-features
           command: check ${{ matrix.checks }}
           command-arguments: --show-stats
+          rust-version: nightly
