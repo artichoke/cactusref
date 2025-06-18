@@ -184,7 +184,7 @@ unsafe fn drop_unreachable<T>(this: &mut Rc<T>) {
     // Mark `this` as pending deallocation. This is not strictly necessary since
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
     if !(*rcbox).is_uninit() {
-        trace!("cactusref deallocating unreachable RcBox {:p}", rcbox);
+        trace!("cactusref deallocating unreachable RcBox {rcbox:p}");
         // Mark the `RcBox` as uninitialized so we can make its `MaybeUninit`
         // fields uninhabited.
         (*rcbox).make_uninit();
@@ -222,11 +222,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
     // in the cycle are reachable by other nodes in the cycle, so removing
     // all cycle-internal links won't result in a leak.
     for (ptr, &refcount) in &cycle {
-        trace!(
-            "cactusref dropping {:?} member of orphaned cycle with refcount {}",
-            ptr,
-            refcount
-        );
+        trace!("cactusref dropping {ptr:?} member of orphaned cycle with refcount {refcount}");
 
         // Remove reverse links so `this` is not included in cycle detection for
         // objects that had adopted `this`. This prevents a use-after-free in
@@ -288,7 +284,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
             // Move the links `HashMap` out of the `RcBox`. Dropping an
             // uninitialized `MaybeUninit` has no effect.
             let links = mem::replace(&mut (*rcbox).links, MaybeUninit::uninit());
-            trace!("cactusref deconstructed member {:p} of orphan cycle", rcbox);
+            trace!("cactusref deconstructed member {rcbox:p} of orphan cycle");
             // Move `T` and the `HashMap` out of the `RcBox` to be dropped after
             // busting the cycle.
             inners.push((inner.assume_init(), links.assume_init()));
@@ -315,10 +311,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
 
     for ptr in unreachable_cycle_participants {
         let ptr = ptr.into_raw_non_null();
-        trace!(
-            "cactusref deallocating RcBox after dropping item {:?} in orphaned cycle",
-            ptr
-        );
+        trace!("cactusref deallocating RcBox after dropping item {ptr:?} in orphaned cycle");
 
         let rcbox = ptr.as_ptr();
         // remove the implicit "strong weak" pointer now that we've destroyed
@@ -327,8 +320,7 @@ unsafe fn drop_cycle<T>(cycle: HashMap<Link<T>, usize>) {
 
         if (*rcbox).weak() == 0 {
             trace!(
-                "no more weak references, deallocating layout for item {:?} in orphaned cycle",
-                ptr
+                "no more weak references, deallocating layout for item {ptr:?} in orphaned cycle"
             );
             // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is
             // always safe to call.
@@ -400,8 +392,7 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
     // `this` is unreachable, but `kill`ing `this ensures we don't double-free.
     if !(*rcbox).is_uninit() {
         trace!(
-            "cactusref deallocating RcBox after dropping adopted and unreachable item {:p} in the object graph",
-            rcbox
+            "cactusref deallocating RcBox after dropping adopted and unreachable item {rcbox:p} in the object graph"
         );
         // Mark the `RcBox` as uninitialized so we can make its `MaybeUninit`
         // fields uninhabited.
@@ -425,8 +416,8 @@ unsafe fn drop_unreachable_with_adoptions<T>(this: &mut Rc<T>) {
 
     if (*rcbox).weak() == 0 {
         trace!(
-            "no more weak references, deallocating layout for adopted and unreachable item {:?} in the object graph",
-            this.ptr
+            "no more weak references, deallocating layout for adopted and unreachable item {ptr:?} in the object graph",
+            ptr = this.ptr,
         );
         // SAFETY: `T` is `Sized`, which means `Layout::for_value_raw` is always
         // safe to call.
