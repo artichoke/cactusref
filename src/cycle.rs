@@ -90,13 +90,11 @@ fn debug_cycle<T>(cycle: &HashMap<Link<T>, usize>) {
 
     if has_external_owners {
         trace!(
-            "cactusref reachability test found externally owned cycle with (strong, cycle) counts: {:?}",
-            counts
+            "cactusref reachability test found externally owned cycle with (strong, cycle) counts: {counts:?}"
         );
     } else {
         trace!(
-            "cactusref reachability test found unreachable cycle  with (strong, cycle) counts: {:?}",
-            counts
+            "cactusref reachability test found unreachable cycle  with (strong, cycle) counts: {counts:?}"
         );
     }
 }
