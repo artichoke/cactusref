@@ -3,10 +3,14 @@ name: Merge
 "on":
   pull_request:
     types: [opened, labeled, unlabeled, synchronize]
+permissions: {}
 jobs:
   labels:
     name: Labels
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
 
     steps:
       - uses: mheap/github-action-required-labels@8afbe8ae6ab7647d0c9f0cfa7c2f939650d22509 # v5.5
