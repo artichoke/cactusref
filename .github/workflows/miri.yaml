@@ -9,6 +9,7 @@ name: Miri
       - trunk
   schedule:
     - cron: "0 0 * * WED"
+permissions: {}
 jobs:
   miri:
     name: Test with Miri
@@ -18,10 +19,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/miri@v2.0.1
+        uses: artichoke/setup-rust/miri@68e0ebb3b406970de1cc2ca807797c9156a198a7 # v2.0.1
         with:
           toolchain: nightly
 

@@ -9,6 +9,7 @@ name: CI
       - trunk
   schedule:
     - cron: "0 0 * * WED"
+permissions: {}
 jobs:
   build:
     name: Build
@@ -22,10 +23,12 @@ jobs:
       RUST_BACKTRACE: 1
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
+        uses: artichoke/setup-rust/build-and-test@68e0ebb3b406970de1cc2ca807797c9156a198a7 # v2.0.1
         with:
           toolchain: nightly
 
@@ -59,12 +62,15 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
       RUST_BACKTRACE: 1
+      TARGET: ${{ matrix.target }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
+        uses: artichoke/setup-rust/build-and-test@68e0ebb3b406970de1cc2ca807797c9156a198a7 # v2.0.1
         with:
           toolchain: nightly
           target: ${{ matrix.target }}
@@ -74,19 +80,24 @@ jobs:
         run: sudo apt-get update && sudo apt install gcc-multilib
 
       - name: Compile
-        run: cargo build --verbose --target ${{ matrix.target }}
+        shell: bash
+        run: cargo build --verbose --target "$TARGET"
 
       - name: Compile tests
-        run: cargo test --no-run --target ${{ matrix.target }}
+        shell: bash
+        run: cargo test --no-run --target "$TARGET"
 
       - name: Test
-        run: cargo test --target ${{ matrix.target }}
+        shell: bash
+        run: cargo test --target "$TARGET"
 
       - name: Test with all features
-        run: cargo test --all-features --target ${{ matrix.target }}
+        shell: bash
+        run: cargo test --all-features --target "$TARGET"
 
       - name: Test with no default features
-        run: cargo test --no-default-features --target ${{ matrix.target }}
+        shell: bash
+        run: cargo test --no-default-features --target "$TARGET"
 
   leaksan:
     name: Leak sanitizer
@@ -102,12 +113,15 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
       RUST_BACKTRACE: 1
+      TARGET: ${{ matrix.target }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
+        uses: artichoke/setup-rust/build-and-test@68e0ebb3b406970de1cc2ca807797c9156a198a7 # v2.0.1
         with:
           toolchain: nightly
           target: ${{ matrix.target }}
@@ -115,7 +129,7 @@ jobs:
       - name: Test with leak sanitizer and all features
         # LeakSanitzier is broken: https://github.com/rust-lang/rust/issues/111073
         if: false
-        run: cargo test --all-features --target ${{ matrix.target }}
+        run: cargo test --all-features --target "$TARGET"
         env:
           RUSTFLAGS: "-Z sanitizer=leak"
 
@@ -127,10 +141,12 @@ jobs:
       RUST_BACKTRACE: 1
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/lint-and-format@v2.0.1
+        uses: artichoke/setup-rust/lint-and-format@68e0ebb3b406970de1cc2ca807797c9156a198a7 # v2.0.1
         with:
           toolchain: nightly
 
@@ -145,7 +161,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Ruby toolchain
         uses: ruby/setup-ruby@2a7b30092b0caf9c046252510f9273b4875f3db9 # v1.254.0
@@ -161,10 +179,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js runtime
-        uses: actions/setup-node@v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "lts/*"
 
