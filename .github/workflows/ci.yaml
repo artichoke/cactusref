@@ -80,18 +80,23 @@ jobs:
         run: sudo apt-get update && sudo apt install gcc-multilib
 
       - name: Compile
+        shell: bash
         run: cargo build --verbose --target "$TARGET"
 
       - name: Compile tests
+        shell: bash
         run: cargo test --no-run --target "$TARGET"
 
       - name: Test
+        shell: bash
         run: cargo test --target "$TARGET"
 
       - name: Test with all features
+        shell: bash
         run: cargo test --all-features --target "$TARGET"
 
       - name: Test with no default features
+        shell: bash
         run: cargo test --no-default-features --target "$TARGET"
 
   leaksan:
