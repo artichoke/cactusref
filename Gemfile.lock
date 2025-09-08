@@ -16,8 +16,8 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.3.0)
-    regexp_parser (2.10.0)
-    rubocop (1.79.1)
+    regexp_parser (2.11.2)
+    rubocop (1.80.1)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
@@ -36,7 +36,7 @@ GEM
       rubocop (>= 1.72.1)
     ruby-progressbar (1.13.0)
     thor (1.4.0)
-    unicode-display_width (3.1.4)
+    unicode-display_width (3.1.5)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
 
@@ -46,7 +46,7 @@ PLATFORMS
 DEPENDENCIES
   bundler-audit (~> 0.9)
   rake (>= 12.3.3)
-  rubocop (~> 1.79)
+  rubocop (~> 1.80)
   rubocop-rake (~> 0.7)
 
 BUNDLED WITH
