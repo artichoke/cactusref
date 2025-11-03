@@ -1,7 +1,6 @@
 # CactusRef
 
 [![GitHub Actions](https://github.com/artichoke/cactusref/workflows/CI/badge.svg)](https://github.com/artichoke/cactusref/actions)
-[![Discord](https://img.shields.io/discord/607683947496734760)](https://discord.gg/QCe2tp2)
 [![Twitter](https://img.shields.io/twitter/follow/artichokeruby?label=Follow&style=social)](https://twitter.com/artichokeruby)
 <br>
 [![Crate](https://img.shields.io/crates/v/cactusref.svg)](https://crates.io/crates/cactusref)
